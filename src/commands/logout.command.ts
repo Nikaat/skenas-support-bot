@@ -8,7 +8,9 @@ export const logoutCommand = {
     try {
       const chatId = ctx.chat?.id;
       if (!chatId) {
-        await ctx.reply("❌ Unable to identify chat. Please try again.");
+        await ctx.reply(
+          "❌ قادر به شناسایی چت نیستیم. لطفاً دوباره تلاش کنید."
+        );
         return;
       }
 
@@ -17,18 +19,18 @@ export const logoutCommand = {
 
       if (removed) {
         await ctx.reply(
-          "✅ Successfully logged out!\n\n" +
-            "Your admin session has been ended.\n" +
-            "Use /start to authenticate again if needed."
+          "✅ با موفقیت خارج شدید!\n\n" +
+            "جلسه ادمین شما پایان یافته است.\n" +
+            "در صورت نیاز از /start برای احراز هویت مجدد استفاده کنید."
         );
       } else {
         await ctx.reply(
-          "ℹ️ No active session found.\n\n" + "You are already logged out."
+          "ℹ️ هیچ جلسه فعالی یافت نشد.\n\n" + "شما قبلاً خارج شده‌اید."
         );
       }
     } catch (error) {
       await ctx.reply(
-        "❌ An error occurred during logout. Please try again later."
+        "❌ خطایی در حین خروج رخ داد. لطفاً بعداً دوباره تلاش کنید."
       );
     }
   },

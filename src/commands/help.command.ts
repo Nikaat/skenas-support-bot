@@ -6,33 +6,33 @@ export const helpCommand = {
   handler: async (ctx: Context): Promise<void> => {
     try {
       const helpText = `
-🤖 <b>Skenas Admin Bot - Help</b>
+🤖 <b>ربات هشدار تراکنش‌های ناموفق - راهنما</b>
 
-<b>Available Commands:</b>
+<b>دستورات موجود:</b>
 
-/start - Start the bot and verify admin access
-/logs - View failed transaction logs (admin only)
-/logout - End your admin session
-/help - Show this help message
-/status - Check bot and API connection status
+/start - شروع ربات و تأیید دسترسی ادمین
+/logs - مشاهده لاگ‌های تراکنش‌های ناموفق
+/status - بررسی وضعیت ربات
+/logout - پایان دادن به جلسه ادمین
+/help - نمایش این پیام راهنما
 
-<b>How to use:</b>
+<b>هدف ربات:</b>
+این ربات برای دریافت هشدارهای تراکنش‌های ناموفق از برنامه اصلی طراحی شده است.
 
-1️⃣ Use /start to begin authentication
-2️⃣ Share your phone number when prompted
-3️⃣ If you're an admin, you'll be authenticated
-4️⃣ Use /logs to view failed transaction logs
-5️⃣ Use /logout when you're done
+<b>نحوه استفاده:</b>
 
-<b>Note:</b> Only users with admin privileges can access the logs.
+1️⃣ از /start برای احراز هویت ادمین استفاده کنید
+2️⃣ شماره تلفن خود را به اشتراک بگذارید
+3️⃣ پس از تأیید، هشدارهای تراکنش‌های ناموفق را دریافت خواهید کرد
+4️⃣ از /logs برای مشاهده جزئیات تراکنش‌ها استفاده کنید
 
-<b>Support:</b> Contact your system administrator for assistance.
+<b>توجه:</b> فقط ادمین‌های تأیید شده می‌توانند از این ربات استفاده کنند.
       `.trim();
 
       await ctx.reply(helpText, { parse_mode: "HTML" });
     } catch (error) {
       await ctx.reply(
-        "❌ An error occurred while showing help. Please try again later."
+        "❌ خطایی در نمایش راهنما رخ داد. لطفاً بعداً دوباره تلاش کنید."
       );
     }
   },

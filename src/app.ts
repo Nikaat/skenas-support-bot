@@ -10,20 +10,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Health Check Endpoint ---
+// --- Health Check Endpoint (Simple) ---
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.bot.nodeEnv,
-  });
+  res.status(200).json({ status: "OK" });
 });
 
-// --- Notification Endpoint ---
+// --- Failed Transaction Notification Endpoint ---
 app.post("/api/notify", async (req, res) => {
   try {
-    // Verify API key
+    // Verify API key from main app
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
@@ -33,14 +28,14 @@ app.post("/api/notify", async (req, res) => {
     }
 
     const apiKey = authHeader.substring(7);
-    if (apiKey !== config.skenas.apiKey) {
+    if (apiKey !== config.bot.apiKey) {
       return res.status(403).json({
         success: false,
-        error: "Invalid API key",
+        error: "Invalid API key - Access denied",
       });
     }
 
-    // Validate request bod
+    // Validate request body
     const { message, priority = "normal" } = req.body;
 
     if (!message || typeof message !== "string") {
@@ -50,8 +45,8 @@ app.post("/api/notify", async (req, res) => {
       });
     }
 
-    // Send notification to all active admin sessions
-    const sentCount = await telegramBot.sendNotificationToAllAdmins(
+    // Send failed transaction alert to all authenticated admins
+    const sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
       message,
       priority
     );
@@ -59,13 +54,13 @@ app.post("/api/notify", async (req, res) => {
     return res.json({
       success: true,
       data: {
-        message: "Notification sent successfully",
+        message: "Failed transaction alert sent successfully",
         recipients: sentCount,
         priority,
       },
     });
   } catch (error) {
-    console.error("Error processing notification:", error);
+    console.error("Error sending failed transaction alert:", error);
     return res.status(500).json({
       success: false,
       error: "Internal server error",

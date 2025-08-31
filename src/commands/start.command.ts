@@ -8,7 +8,9 @@ export const startCommand = {
     try {
       const chatId = ctx.chat?.id;
       if (!chatId) {
-        await ctx.reply("❌ Unable to identify chat. Please try again.");
+        await ctx.reply(
+          "❌ قادر به شناسایی چت نیستیم. لطفاً دوباره تلاش کنید."
+        );
         return;
       }
 
@@ -19,22 +21,22 @@ export const startCommand = {
 
       if (existingSession) {
         await ctx.reply(
-          `✅ Welcome back! You are already authenticated as an admin.\n\n` +
-            `Use /logs to view failed transaction logs.\n` +
-            `Use /logout to end your session.`
+          `✅ خوش آمدید! شما قبلاً به عنوان ادمین احراز هویت شده‌اید.\n\n` +
+            `از /logs برای مشاهده لاگ‌های تراکنش‌های ناموفق استفاده کنید.\n` +
+            `از /logout برای پایان دادن به جلسه استفاده کنید.`
         );
         return;
       }
 
       // Send welcome message with phone number request
       await ctx.reply(
-        `🤖 Welcome to Skenas Admin Bot!\n\n` +
-          `This bot provides access to failed transaction logs for admin users only.\n\n` +
-          `To continue, please share your phone number by clicking the button below:`,
+        `🤖 به ربات هشدار تراکنش‌های ناموفق خوش آمدید!\n\n` +
+          `این ربات هشدارهای تراکنش‌های ناموفق را از برنامه اصلی دریافت کرده و به ادمین‌ها ارسال می‌کند.\n\n` +
+          `برای ادامه، لطفاً شماره تلفن خود را با کلیک روی دکمه زیر به اشتراک بگذارید:`,
         {
           reply_markup: {
             keyboard: [
-              [{ text: "📱 Share Phone Number", request_contact: true }],
+              [{ text: "📱 اشتراک‌گذاری شماره تلفن", request_contact: true }],
             ],
             resize_keyboard: true,
             one_time_keyboard: true,
@@ -42,7 +44,7 @@ export const startCommand = {
         }
       );
     } catch (error) {
-      await ctx.reply("❌ An error occurred. Please try again later.");
+      await ctx.reply("❌ خطایی رخ داد. لطفاً بعداً دوباره تلاش کنید.");
     }
   },
 };

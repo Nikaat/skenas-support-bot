@@ -1,6 +1,5 @@
 import { Context } from "telegraf";
 import { adminAuthService } from "../services/admin-auth.service";
-import { skenasApiService } from "../services/skenas-api.service";
 
 export const statusCommand = {
   command: "status",
@@ -9,7 +8,9 @@ export const statusCommand = {
     try {
       const chatId = ctx.chat?.id;
       if (!chatId) {
-        await ctx.reply("❌ Unable to identify chat. Please try again.");
+        await ctx.reply(
+          "❌ قادر به شناسایی چت نیستیم. لطفاً دوباره تلاش کنید."
+        );
         return;
       }
 
@@ -17,23 +18,19 @@ export const statusCommand = {
       const session = adminAuthService.getAdminSession(chatId.toString());
       if (!session) {
         await ctx.reply(
-          "❌ You are not authenticated as an admin.\n\n" +
-            "Please use /start to begin the authentication process."
+          "❌ شما به عنوان ادمین احراز هویت نشده‌اید.\n\n" +
+            "لطفاً از /start برای شروع فرآیند احراز هویت استفاده کنید."
         );
         return;
       }
 
       // Show loading message
-      const loadingMsg = await ctx.reply("⏳ Checking system status...");
+      const loadingMsg = await ctx.reply("⏳ در حال بررسی وضعیت سیستم...");
 
       try {
-        // Check API connection
-        const apiStatus = await skenasApiService.testConnection();
-
         // Format status message
         const statusText = formatStatusMessage({
-          apiStatus,
-          activeSessions: 0,
+          activeSessions: adminAuthService.getActiveAdminSessions().length,
           botUptime: process.uptime(),
         });
 
@@ -52,47 +49,35 @@ export const statusCommand = {
           chatId,
           loadingMsg.message_id,
           undefined,
-          "❌ Failed to check system status.\n\n" + "Please try again later."
+          "❌ بررسی وضعیت سیستم ناموفق بود.\n\n" +
+            "لطفاً بعداً دوباره تلاش کنید."
         );
       }
     } catch (error) {
       await ctx.reply(
-        "❌ An error occurred while checking status. Please try again later."
+        "❌ خطایی در حین بررسی وضعیت رخ داد. لطفاً بعداً دوباره تلاش کنید."
       );
     }
   },
 };
 
 function formatStatusMessage(status: {
-  apiStatus: boolean;
   activeSessions: number;
   botUptime: number;
 }): string {
   const uptimeHours = Math.floor(status.botUptime / 3600);
   const uptimeMinutes = Math.floor((status.botUptime % 3600) / 60);
 
-  let result = `📊 <b>System Status Report</b>\n\n`;
-
-  // API status
-  result += `🔌 <b>Main App API:</b> `;
-  result += status.apiStatus ? "🟢 Connected" : "🔴 Disconnected";
-  result += "\n";
+  let result = `📊 <b>وضعیت ربات هشدار تراکنش</b>\n\n`;
 
   // Active sessions
-  result += `👥 <b>Active Admin Sessions:</b> ${status.activeSessions}\n`;
+  result += `👥 <b>ادمین‌های فعال:</b> ${status.activeSessions}\n`;
 
   // Bot uptime
-  result += `⏱️ <b>Bot Uptime:</b> ${uptimeHours}h ${uptimeMinutes}m\n`;
+  result += `⏱️ <b>زمان کار ربات:</b> ${uptimeHours}س ${uptimeMinutes}د\n`;
 
   // Overall status
-  const overallStatus = status.apiStatus ? "🟢" : "🔴";
-  result += `\n📈 <b>Overall Status:</b> ${overallStatus} `;
-  result += status.apiStatus ? "All systems operational" : "Some systems down";
-
-  // Recommendations
-  if (!status.apiStatus) {
-    result += "\n\n⚠️ <b>Recommendation:</b> Check main application API";
-  }
+  result += `\n📈 <b>وضعیت کلی:</b> 🟢 آماده دریافت هشدارها`;
 
   return result;
 }

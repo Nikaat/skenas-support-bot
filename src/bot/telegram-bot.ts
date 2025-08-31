@@ -38,7 +38,7 @@ export class TelegramBot {
       const contact = ctx.message.contact;
       if (!contact) {
         await ctx.reply(
-          "❌ No contact information received. Please try again."
+          "❌ هیچ اطلاعات تماسی دریافت نشد. لطفاً دوباره تلاش کنید."
         );
         return;
       }
@@ -47,12 +47,14 @@ export class TelegramBot {
       const chatId = ctx.chat?.id;
 
       if (!chatId) {
-        await ctx.reply("❌ Unable to identify chat. Please try again.");
+        await ctx.reply(
+          "❌ قادر به شناسایی چت نیستیم. لطفاً دوباره تلاش کنید."
+        );
         return;
       }
 
       // Remove the phone number keyboard
-      await ctx.reply("⏳ Verifying admin access...", {
+      await ctx.reply("⏳ در حال تأیید دسترسی ادمین...", {
         reply_markup: { remove_keyboard: true },
       });
 
@@ -64,26 +66,26 @@ export class TelegramBot {
         adminAuthService.createAdminSession(phoneNumber, chatId.toString());
 
         await ctx.reply(
-          `✅ <b>Admin Access Granted!</b>\n\n` +
-            `Welcome! Your phone number ${phoneNumber} is verified as admin.\n\n` +
-            `You can now use the following commands:\n` +
-            `• /logs - View failed transaction logs\n` +
-            `• /status - Check system status\n` +
-            `• /logout - End your session\n` +
-            `• /help - Show available commands`,
+          `✅ <b>دسترسی ادمین تأیید شد!</b>\n\n` +
+            `خوش آمدید! شماره تلفن ${phoneNumber} شما به عنوان ادمین تأیید شده است.\n\n` +
+            `اکنون می‌توانید از دستورات زیر استفاده کنید:\n` +
+            `• /logs - مشاهده لاگ‌های تراکنش‌های ناموفق\n` +
+            `• /status - بررسی وضعیت سیستم\n` +
+            `• /logout - پایان دادن به جلسه\n` +
+            `• /help - نمایش دستورات موجود`,
           { parse_mode: "HTML" }
         );
       } else {
         await ctx.reply(
-          `❌ <b>Access Denied</b>\n\n` +
-            `The phone number ${phoneNumber} is not in the admin list.\n\n` +
-            `Please contact your system administrator to be added to the admin list.`,
+          `❌ <b>دسترسی رد شد</b>\n\n` +
+            `شماره تلفن ${phoneNumber} در لیست ادمین‌ها نیست.\n\n` +
+            `لطفاً با مدیر سیستم تماس بگیرید تا به لیست ادمین‌ها اضافه شوید.`,
           { parse_mode: "HTML" }
         );
       }
     } catch (error) {
       await ctx.reply(
-        "❌ An error occurred while processing your contact information. Please try again."
+        "❌ خطایی در حین پردازش اطلاعات تماس شما رخ داد. لطفاً دوباره تلاش کنید."
       );
     }
   }
@@ -103,23 +105,23 @@ export class TelegramBot {
 
       if (!session) {
         await ctx.reply(
-          "❌ You are not authenticated as an admin.\n\n" +
-            "Please use /start to begin the authentication process."
+          "❌ شما به عنوان ادمین احراز هویت نشده‌اید.\n\n" +
+            "لطفاً از /start برای شروع فرآیند احراز هویت استفاده کنید."
         );
         return;
       }
 
       // If authenticated, provide helpful response
       await ctx.reply(
-        "💡 You can use the following commands:\n\n" +
-          "• /logs - View failed transaction logs\n" +
-          "• /status - Check system status\n" +
-          "• /logout - End your session\n" +
-          "• /help - Show available commands"
+        "💡 می‌توانید از دستورات زیر استفاده کنید:\n\n" +
+          "• /logs - مشاهده لاگ‌های تراکنش‌های ناموفق\n" +
+          "• /status - بررسی وضعیت سیستم\n" +
+          "• /logout - پایان دادن به جلسه\n" +
+          "• /help - نمایش دستورات موجود"
       );
     } catch (error) {
       await ctx.reply(
-        "❌ An error occurred while processing your message. Please try again."
+        "❌ خطایی در حین پردازش پیام شما رخ داد. لطفاً دوباره تلاش کنید."
       );
     }
   }
@@ -128,11 +130,11 @@ export class TelegramBot {
     try {
       // Set bot commands for better UX
       const botCommands = [
-        { command: "start", description: "Start bot and verify admin access" },
-        { command: "logs", description: "View failed transaction logs" },
-        { command: "status", description: "Check system status" },
-        { command: "logout", description: "End admin session" },
-        { command: "help", description: "Show available commands" },
+        { command: "start", description: "شروع ربات و احراز هویت ادمین" },
+        { command: "logs", description: "مشاهده تراکنش‌های ناموفق" },
+        { command: "status", description: "وضعیت ربات" },
+        { command: "logout", description: "خروج از ربات" },
+        { command: "help", description: "راهنما" },
       ];
 
       await this.bot.telegram.setMyCommands(botCommands);
@@ -150,9 +152,9 @@ export class TelegramBot {
   }
 
   /**
-   * Send notification to a specific chat
+   * Send failed transaction alert to a specific admin chat
    */
-  public async sendNotificationToChat(
+  public async sendFailedTransactionAlert(
     chatId: string,
     message: string,
     priority: string = "normal"
@@ -166,23 +168,24 @@ export class TelegramBot {
           high: "🚨",
         }[priority] || "📱";
 
-      const formattedMessage = `${priorityEmoji} <b>Admin Notification</b>\n\n${message}`;
+      const formattedMessage = `${priorityEmoji} <b>هشدار تراکنش ناموفق</b>\n\n${message}`;
 
       await this.bot.telegram.sendMessage(chatId, formattedMessage, {
         parse_mode: "HTML",
       });
-
-      console.log();
     } catch (error) {
-      console.error(`❌ Failed to send notification to chat ${chatId}:`, error);
+      console.error(
+        `❌ Failed to send failed transaction alert to chat ${chatId}:`,
+        error
+      );
       throw error;
     }
   }
 
   /**
-   * Send notification to all active admin sessions
+   * Send failed transaction alert to all active admin sessions
    */
-  public async sendNotificationToAllAdmins(
+  public async sendFailedTransactionAlertToAllAdmins(
     message: string,
     priority: string = "normal"
   ): Promise<number> {
@@ -192,11 +195,15 @@ export class TelegramBot {
 
       for (const session of activeSessions) {
         try {
-          await this.sendNotificationToChat(session.chatId, message, priority);
+          await this.sendFailedTransactionAlert(
+            session.chatId,
+            message,
+            priority
+          );
           sentCount++;
         } catch (error) {
           console.error(
-            `Failed to send notification to admin ${session.phoneNumber}:`,
+            `Failed to send failed transaction alert to admin ${session.phoneNumber}:`,
             error
           );
         }
