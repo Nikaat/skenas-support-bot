@@ -25,7 +25,6 @@ app.get("/api/bot-status", (req, res) => {
       data: {
         status: "OK",
         uptime: process.uptime(),
-        environment: config.bot.nodeEnv,
         activeAdmins: activeSessions.length,
         adminPhoneNumbers: config.admin.phoneNumbers,
         timestamp: new Date().toISOString(),
@@ -67,7 +66,7 @@ app.post("/api/test-notification", async (req, res) => {
       "normal"
     );
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         message: "Test notification sent successfully",
@@ -78,7 +77,7 @@ app.post("/api/test-notification", async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending test notification:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "Internal server error",
     });

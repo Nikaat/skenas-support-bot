@@ -2,13 +2,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const {
-  TELEGRAM_BOT_TOKEN,
-  ADMIN_PHONE_NUMBERS,
-  TELEGRAM_BOT_API_KEY,
-  BOT_PORT,
-  NODE_ENV,
-} = process.env;
+const { TELEGRAM_BOT_TOKEN, ADMIN_PHONE_NUMBERS, TELEGRAM_BOT_API_KEY, PORT } =
+  process.env;
 
 export const config = {
   telegram: {
@@ -20,8 +15,7 @@ export const config = {
       : [],
   },
   bot: {
-    port: Number(BOT_PORT) || 3001,
-    nodeEnv: NODE_ENV || "development",
+    port: Number(PORT) || 3001,
     apiKey: TELEGRAM_BOT_API_KEY || "",
   },
 };
