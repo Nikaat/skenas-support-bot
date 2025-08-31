@@ -15,6 +15,94 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
 
+// --- Bot Status Endpoint ---
+app.get("/api/bot-status", (req, res) => {
+  try {
+    const activeSessions = adminAuthService.getActiveAdminSessions();
+
+    res.json({
+      success: true,
+      data: {
+        status: "OK",
+        uptime: process.uptime(),
+        environment: config.bot.nodeEnv,
+        activeAdmins: activeSessions.length,
+        adminPhoneNumbers: config.admin.phoneNumbers,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+});
+
+// --- Test Notification Endpoint ---
+app.post("/api/test-notification", async (req, res) => {
+  try {
+    // Verify API key
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        error: "Missing or invalid authorization header",
+      });
+    }
+
+    const apiKey = authHeader.substring(7);
+    if (apiKey !== config.bot.apiKey) {
+      return res.status(403).json({
+        success: false,
+        error: "Invalid API key - Access denied",
+      });
+    }
+
+    // Send test notification to all active admin sessions
+    const testMessage =
+      "🧪 <b>تست سیستم هشدار</b>\n\nاین یک پیام تست برای بررسی عملکرد ربات است.";
+    const sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
+      testMessage,
+      "normal"
+    );
+
+    res.json({
+      success: true,
+      data: {
+        message: "Test notification sent successfully",
+        recipients: sentCount,
+        testMessage,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Error sending test notification:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+});
+
+// --- Admin Phone Numbers Endpoint ---
+app.get("/api/admin-phone-numbers", (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        phoneNumbers: config.admin.phoneNumbers,
+        count: config.admin.phoneNumbers.length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+});
+
 // --- Failed Transaction Notification Endpoint ---
 app.post("/api/notify", async (req, res) => {
   try {
@@ -57,6 +145,7 @@ app.post("/api/notify", async (req, res) => {
         message: "Failed transaction alert sent successfully",
         recipients: sentCount,
         priority,
+        timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
