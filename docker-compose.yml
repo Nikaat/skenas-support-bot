@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build: .
+    container_name: skenas-telegram-bot
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
+      - ADMIN_PHONE_NUMBERS=${ADMIN_PHONE_NUMBERS}
+      - SKENAS_API_BASE_URL=${SKENAS_API_BASE_URL}
+      - SKENAS_API_KEY=${SKENAS_API_KEY}
+      - BOT_PORT=3001
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - skenas-network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  skenas-network:
+    driver: bridge
