@@ -1,5 +1,5 @@
-import { config } from '../config/config';
-import { IAdminSession } from '../types';
+import { config } from "../config/config";
+import { IAdminSession } from "../types";
 
 export class AdminAuthService {
   private adminSessions: Map<string, IAdminSession> = new Map();
@@ -23,7 +23,6 @@ export class AdminAuthService {
     };
 
     this.adminSessions.set(chatId, session);
-    console.log(`✅ Admin session created for chat ${chatId}`);
   }
 
   /**

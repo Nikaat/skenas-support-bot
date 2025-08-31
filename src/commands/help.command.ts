@@ -1,8 +1,8 @@
-import { Context } from 'telegraf';
+import { Context } from "telegraf";
 
 export const helpCommand = {
-  command: 'help',
-  description: 'Show available commands',
+  command: "help",
+  description: "Show available commands",
   handler: async (ctx: Context): Promise<void> => {
     try {
       const helpText = `
@@ -29,10 +29,11 @@ export const helpCommand = {
 <b>Support:</b> Contact your system administrator for assistance.
       `.trim();
 
-      await ctx.reply(helpText, { parse_mode: 'HTML' });
+      await ctx.reply(helpText, { parse_mode: "HTML" });
     } catch (error) {
-      console.error('Error in help command:', error);
-      await ctx.reply('❌ An error occurred while showing help. Please try again later.');
+      await ctx.reply(
+        "❌ An error occurred while showing help. Please try again later."
+      );
     }
   },
 };

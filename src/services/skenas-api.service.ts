@@ -1,13 +1,13 @@
-import axios from 'axios';
-import { config } from '../config/config';
-import { IFailedInvoice } from '../types';
+import axios from "axios";
+import { config } from "../config/config";
+import { IFailedInvoice } from "../types";
 
 export class SkenasApiService {
   private apiClient = axios.create({
     baseURL: config.skenas.apiBaseUrl,
     timeout: 10000,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${config.skenas.apiKey}`,
     },
   });
@@ -18,21 +18,23 @@ export class SkenasApiService {
   public async getFailedInvoicesByDateRange(
     startDate: Date,
     endDate: Date,
-    limit: number = 20,
+    limit: number = 20
   ): Promise<IFailedInvoice[]> {
     try {
-      const response = await this.apiClient.get('/api/failed-invoices/date-range', {
-        params: {
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-          limit,
-        },
-      });
+      const response = await this.apiClient.get(
+        "/api/failed-invoices/date-range",
+        {
+          params: {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            limit,
+          },
+        }
+      );
 
       return response.data.data || [];
     } catch (error) {
-      console.error('Failed to fetch failed invoices:', error);
-      throw new Error('Failed to fetch failed invoices from Skenas API');
+      throw new Error("Failed to fetch failed invoices from Skenas API");
     }
   }
 
@@ -41,7 +43,7 @@ export class SkenasApiService {
    */
   public async testConnection(): Promise<boolean> {
     try {
-      await this.apiClient.get('/api/health');
+      await this.apiClient.get("/api/health");
       return true;
     } catch (error) {
       return false;
