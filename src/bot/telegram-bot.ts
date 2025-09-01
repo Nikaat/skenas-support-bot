@@ -69,7 +69,7 @@ export class TelegramBot {
           `✅ <b>دسترسی ادمین تأیید شد!</b>\n\n` +
             `خوش آمدید! شماره تلفن ${phoneNumber} شما به عنوان ادمین تأیید شده است.\n\n` +
             `اکنون می‌توانید از دستورات زیر استفاده کنید:\n` +
-            `• /logs - مشاهده لاگ‌های تراکنش‌های ناموفق\n` +
+            `• /logs - مشاهده لاگ‌های تراکنش‌های ناموفق و درحال بررسی\n` +
             `• /status - بررسی وضعیت سیستم\n` +
             `• /logout - پایان دادن به جلسه\n` +
             `• /help - نمایش دستورات موجود`,
@@ -114,7 +114,7 @@ export class TelegramBot {
       // If authenticated, provide helpful response
       await ctx.reply(
         "💡 می‌توانید از دستورات زیر استفاده کنید:\n\n" +
-          "• /logs - مشاهده لاگ‌های تراکنش‌های ناموفق\n" +
+          "• /logs - مشاهده لاگ‌های تراکنش‌های ناموفق و درحال بررسی\n" +
           "• /status - بررسی وضعیت سیستم\n" +
           "• /logout - پایان دادن به جلسه\n" +
           "• /help - نمایش دستورات موجود"
@@ -131,7 +131,10 @@ export class TelegramBot {
       // Set bot commands for better UX
       const botCommands = [
         { command: "start", description: "شروع ربات و احراز هویت ادمین" },
-        { command: "logs", description: "مشاهده تراکنش‌های ناموفق" },
+        {
+          command: "logs",
+          description: "مشاهده تراکنش‌های ناموفق و درحال بررسی",
+        },
         { command: "status", description: "وضعیت ربات" },
         { command: "logout", description: "خروج از ربات" },
         { command: "help", description: "راهنما" },
@@ -160,17 +163,7 @@ export class TelegramBot {
     priority: string = "normal"
   ): Promise<void> {
     try {
-      // Add priority indicator to message
-      const priorityEmoji =
-        {
-          low: "🔵",
-          normal: "📱",
-          high: "🚨",
-        }[priority] || "📱";
-
-      const formattedMessage = `${priorityEmoji} <b>هشدار تراکنش ناموفق</b>\n\n${message}`;
-
-      await this.bot.telegram.sendMessage(chatId, formattedMessage, {
+      await this.bot.telegram.sendMessage(chatId, message, {
         parse_mode: "HTML",
       });
     } catch (error) {

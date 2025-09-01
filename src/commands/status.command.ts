@@ -68,7 +68,7 @@ function formatStatusMessage(status: {
   const uptimeHours = Math.floor(status.botUptime / 3600);
   const uptimeMinutes = Math.floor((status.botUptime % 3600) / 60);
 
-  let result = `📊 <b>وضعیت ربات هشدار تراکنش</b>\n\n`;
+  let result = `📊 <b>وضعیت ربات هشدار تراکنش‌های ناموفق و درحال بررسی</b>\n\n`;
 
   // Active sessions
   result += `👥 <b>ادمین‌های فعال:</b> ${status.activeSessions}\n`;
