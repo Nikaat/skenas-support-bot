@@ -75,7 +75,7 @@ function formatStatusMessage(status: {
   result += `👥 <b>ادمین‌های فعال:</b> ${status.activeSessions}\n`;
 
   // Bot uptime
-  result += `⏱️ <b>زمان کار ربات:</b> ${uptimeHours}س ${uptimeMinutes}د\n`;
+  result += `⏱️ <b>زمان کار ربات:</b> ${uptimeHours} ساعت ${uptimeMinutes} دقیقه\n`;
 
   // Overall status
   result += `\n📈 <b>وضعیت کلی:</b> 🟢 آماده دریافت هشدارها`;
