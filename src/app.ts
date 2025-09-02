@@ -185,7 +185,7 @@ async function startApplication(): Promise<void> {
   try {
     // Start HTTP server
     const server = app.listen(config.bot.port, () => {
-      console.log(`✅ HTTP server running on port ${config.bot.port}`);
+      console.log(`✅ Bot started on port ${config.bot.port}`);
     });
 
     // Start Telegram bot
@@ -194,7 +194,7 @@ async function startApplication(): Promise<void> {
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
       server.close(() => {
-        console.log("✅ HTTP server closed");
+        console.log("✅ Bot closed");
       });
 
       await telegramBot.stop();
