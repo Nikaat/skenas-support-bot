@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const {
+  ALLOWED_ORIGINS,
   TELEGRAM_BOT_TOKEN,
   ADMIN_PHONE_NUMBERS,
   TELEGRAM_BOT_API_KEY,
@@ -30,6 +31,7 @@ export const config = {
     port: Number(REDIS_PORT) || 6379,
     password: REDIS_PASSWORD || "",
   },
+  allowedOrigins: ALLOWED_ORIGINS || "",
 };
 
 // Validation
@@ -45,4 +47,28 @@ if (config.admin.phoneNumbers.length === 0) {
 
 if (!config.bot.apiKey) {
   throw new Error("TELEGRAM_BOT_API_KEY is required for secure communication");
+}
+
+if (!ALLOWED_ORIGINS) {
+  throw new Error("ALLOWED_ORIGINS is required");
+}
+
+if (!config.bot.port) {
+  throw new Error("PORT is required");
+}
+
+if (!config.bot.apiKey) {
+  throw new Error("TELEGRAM_BOT_API_KEY is required for secure communication");
+}
+
+if (!config.redis.host) {
+  throw new Error("REDIS_HOST is required");
+}
+
+if (!config.redis.port) {
+  throw new Error("REDIS_PORT is required");
+}
+
+if (!config.redis.password) {
+  throw new Error("REDIS_PASSWORD is required");
 }
