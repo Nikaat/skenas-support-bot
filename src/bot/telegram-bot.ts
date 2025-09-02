@@ -36,9 +36,10 @@ export class TelegramBot {
   ): Promise<void> {
     try {
       const contact = ctx.message.contact;
-      if (!contact) {
+      if (!contact || !contact.phone_number) {
         await ctx.reply(
-          "❌ هیچ اطلاعات تماسی دریافت نشد. لطفاً دوباره تلاش کنید."
+          "❌ لطفاً از دکمه 'اشتراک‌گذاری شماره تلفن' استفاده کنید.\n\n" +
+            "شماره تلفن را به صورت دستی تایپ نکنید."
         );
         return;
       }
