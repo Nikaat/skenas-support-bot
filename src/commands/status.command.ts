@@ -15,7 +15,7 @@ export const statusCommand = {
       }
 
       // Check if user is authenticated as admin
-      const session = adminAuthService.getAdminSession(chatId.toString());
+      const session = await adminAuthService.getAdminSession(chatId.toString());
       if (!session) {
         await ctx.reply(
           "❌ شما به عنوان ادمین احراز هویت نشده‌اید.\n\n" +
@@ -29,8 +29,9 @@ export const statusCommand = {
 
       try {
         // Format status message
+        const activeSessions = await adminAuthService.getActiveAdminSessions();
         const statusText = formatStatusMessage({
-          activeSessions: adminAuthService.getActiveAdminSessions().length,
+          activeSessions: activeSessions.length,
           botUptime: process.uptime(),
         });
 

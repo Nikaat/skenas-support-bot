@@ -15,7 +15,7 @@ export const startCommand = {
       }
 
       // Check if user already has an active session
-      const existingSession = adminAuthService.getAdminSession(
+      const existingSession = await adminAuthService.getAdminSession(
         chatId.toString()
       );
 

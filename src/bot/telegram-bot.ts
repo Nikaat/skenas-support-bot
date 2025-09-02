@@ -64,7 +64,10 @@ export class TelegramBot {
 
       if (isAdmin) {
         // Create admin session
-        adminAuthService.createAdminSession(phoneNumber, chatId.toString());
+        await adminAuthService.createAdminSession(
+          phoneNumber,
+          chatId.toString()
+        );
 
         await ctx.reply(
           `✅ <b>دسترسی ادمین تأیید شد!</b>\n\n` +
@@ -102,7 +105,7 @@ export class TelegramBot {
       if (!chatId) return;
 
       // Check if user is authenticated
-      const session = adminAuthService.getAdminSession(chatId.toString());
+      const session = await adminAuthService.getAdminSession(chatId.toString());
 
       if (!session) {
         await ctx.reply(
@@ -184,7 +187,7 @@ export class TelegramBot {
     priority: string = "normal"
   ): Promise<number> {
     try {
-      const activeSessions = adminAuthService.getActiveAdminSessions();
+      const activeSessions = await adminAuthService.getActiveAdminSessions();
       let sentCount = 0;
 
       for (const session of activeSessions) {

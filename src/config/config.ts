@@ -2,8 +2,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const { TELEGRAM_BOT_TOKEN, ADMIN_PHONE_NUMBERS, TELEGRAM_BOT_API_KEY, PORT } =
-  process.env;
+const {
+  TELEGRAM_BOT_TOKEN,
+  ADMIN_PHONE_NUMBERS,
+  TELEGRAM_BOT_API_KEY,
+  PORT,
+  REDIS_HOST,
+  REDIS_PORT,
+  REDIS_PASSWORD,
+} = process.env;
 
 export const config = {
   telegram: {
@@ -17,6 +24,11 @@ export const config = {
   bot: {
     port: Number(PORT) || 3001,
     apiKey: TELEGRAM_BOT_API_KEY || "",
+  },
+  redis: {
+    host: REDIS_HOST || "localhost",
+    port: Number(REDIS_PORT) || 6379,
+    password: REDIS_PASSWORD || "",
   },
 };
 

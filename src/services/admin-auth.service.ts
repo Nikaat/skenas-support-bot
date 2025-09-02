@@ -1,9 +1,9 @@
 import { config } from "../config/config";
 import { IAdminSession } from "../types";
+import redis from "../config/redis";
 
 export class AdminAuthService {
-  private adminSessions: Map<string, IAdminSession> = new Map();
-  private readonly sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly sessionPrefix = "admin_session:";
 
   /**
    * Verify if a phone number belongs to an admin user
@@ -15,76 +15,93 @@ export class AdminAuthService {
   /**
    * Create admin session for a chat
    */
-  public createAdminSession(phoneNumber: string, chatId: string): void {
+  public async createAdminSession(
+    phoneNumber: string,
+    chatId: string
+  ): Promise<void> {
     const session: IAdminSession = {
       phoneNumber,
       chatId,
       lastActivity: new Date(),
     };
 
-    this.adminSessions.set(chatId, session);
+    const sessionKey = `${this.sessionPrefix}${chatId}`;
+    await redis.set(sessionKey, JSON.stringify(session));
   }
 
   /**
    * Get admin session by chat ID
    */
-  public getAdminSession(chatId: string): IAdminSession | null {
-    const session = this.adminSessions.get(chatId);
+  public async getAdminSession(chatId: string): Promise<IAdminSession | null> {
+    const sessionKey = `${this.sessionPrefix}${chatId}`;
+    const sessionData = await redis.get(sessionKey);
 
-    if (!session) {
+    if (!sessionData) {
       return null;
     }
 
-    // Check if session is expired
-    const sessionAge = Date.now() - session.lastActivity.getTime();
-    if (sessionAge > this.sessionTimeout) {
-      this.adminSessions.delete(chatId);
+    try {
+      const session: IAdminSession = JSON.parse(sessionData);
+
+      // Update last activity
+      session.lastActivity = new Date();
+      await redis.set(sessionKey, JSON.stringify(session));
+
+      return session;
+    } catch (error) {
+      console.error("Error parsing session data:", error);
+      await redis.del(sessionKey);
       return null;
     }
-
-    // Update last activity
-    session.lastActivity = new Date();
-    this.adminSessions.set(chatId, session);
-
-    return session;
   }
 
   /**
    * Remove admin session (logout)
    */
-  public removeAdminSession(chatId: string): boolean {
-    return this.adminSessions.delete(chatId);
+  public async removeAdminSession(chatId: string): Promise<boolean> {
+    const sessionKey = `${this.sessionPrefix}${chatId}`;
+    const result = await redis.del(sessionKey);
+    return result > 0;
   }
 
-  /**
-   * Clean up expired sessions
-   */
-  public cleanupExpiredSessions(): number {
-    const now = Date.now();
-    let cleanedCount = 0;
+  // /**
+  //  * Clean up expired sessions (Redis handles TTL automatically)
+  //  */
+  // public async cleanupExpiredSessions(): Promise<number> {
+  //   // Redis automatically handles TTL, so this method is mainly for compatibility
+  //   // We can scan for expired sessions if needed
+  //   const keys = await redis.keys(`${this.sessionPrefix}*`);
+  //   let cleanedCount = 0;
 
-    for (const [chatId, session] of this.adminSessions.entries()) {
-      const sessionAge = now - session.lastActivity.getTime();
-      if (sessionAge > this.sessionTimeout) {
-        this.adminSessions.delete(chatId);
-        cleanedCount++;
-      }
-    }
+  //   for (const key of keys) {
+  //     const ttl = await redis.ttl(key);
+  //     if (ttl === -1) {
+  //       // Key exists but has no TTL, remove it
+  //       await redis.del(key);
+  //       cleanedCount++;
+  //     }
+  //   }
 
-    return cleanedCount;
-  }
+  //   return cleanedCount;
+  // }
 
   /**
    * Get all active admin sessions
    */
-  public getActiveAdminSessions(): IAdminSession[] {
-    const now = Date.now();
+  public async getActiveAdminSessions(): Promise<IAdminSession[]> {
+    const keys = await redis.keys(`${this.sessionPrefix}*`);
     const activeSessions: IAdminSession[] = [];
 
-    for (const session of this.adminSessions.values()) {
-      const sessionAge = now - session.lastActivity.getTime();
-      if (sessionAge <= this.sessionTimeout) {
-        activeSessions.push(session);
+    for (const key of keys) {
+      const sessionData = await redis.get(key);
+      if (sessionData) {
+        try {
+          const session: IAdminSession = JSON.parse(sessionData);
+          activeSessions.push(session);
+        } catch (error) {
+          console.error("Error parsing session data:", error);
+          await redis.del(key);
+        }
       }
     }
 

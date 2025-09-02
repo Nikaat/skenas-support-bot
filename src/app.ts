@@ -16,9 +16,9 @@ app.get("/health", (req, res) => {
 });
 
 // --- Bot Status Endpoint ---
-app.get("/api/bot-status", (req, res) => {
+app.get("/api/bot-status", async (req, res) => {
   try {
-    const activeSessions = adminAuthService.getActiveAdminSessions();
+    const activeSessions = await adminAuthService.getActiveAdminSessions();
 
     res.json({
       success: true,

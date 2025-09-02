@@ -15,7 +15,9 @@ export const logoutCommand = {
       }
 
       // Remove admin session
-      const removed = adminAuthService.removeAdminSession(chatId.toString());
+      const removed = await adminAuthService.removeAdminSession(
+        chatId.toString()
+      );
 
       if (removed) {
         await ctx.reply(
