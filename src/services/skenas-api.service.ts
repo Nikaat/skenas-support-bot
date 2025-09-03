@@ -32,7 +32,7 @@ export class SkenasApiService {
         return false;
       }
 
-      const response = await axios.post(
+      const response = await axios.patch(
         `${this.baseUrl}/api/telegram-bot/cryptocurrency/update-invoice`,
         {
           trackId: confirmation.trackId,
