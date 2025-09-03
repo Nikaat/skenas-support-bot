@@ -3,6 +3,8 @@ import cors from "cors";
 import { config } from "./config/config";
 import { telegramBot } from "./bot/telegram-bot";
 import { adminAuthService } from "./services/admin-auth.service";
+import { skenasApiService } from "./services/skenas-api.service";
+import { ICryptoInvoiceConfirmation } from "./types";
 
 const app = express();
 
@@ -101,59 +103,80 @@ app.get("/api/admin-phone-numbers", (req, res) => {
     });
   }
 });
-
 // --- Failed Transaction Notification Endpoint ---
 app.post("/api/notify", async (req, res) => {
   try {
-    // Verify API key from main app
+    // auth as before ...
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        error: "Missing or invalid authorization header",
-      });
+      return res
+        .status(401)
+        .json({
+          success: false,
+          error: "Missing or invalid authorization header",
+        });
     }
-
     const apiKey = authHeader.substring(7);
     if (apiKey !== config.bot.apiKey) {
-      return res.status(403).json({
-        success: false,
-        error: "Invalid API key - Access denied",
-      });
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid API key - Access denied" });
     }
 
-    // Validate request body
-    const { message, priority = "normal", trackId } = req.body;
+    // NEW: type + meta supported
+    const {
+      message,
+      priority = "normal",
+      type,
+      meta,
+    } = req.body as {
+      message: string;
+      priority?: "low" | "normal" | "high";
+      type?: string;
+      meta?: Record<string, any>;
+    };
 
     if (!message || typeof message !== "string") {
-      return res.status(400).json({
-        success: false,
-        error: "Message is required and must be a string",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: "Message is required and must be a string",
+        });
     }
 
-    // Send failed transaction alert to all authenticated admins
-    const sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
-      message,
-      priority,
-      trackId
-    );
+    let sentCount = 0;
+
+    // If cryptocurrency and we have trackId, send with inline keyboard
+    if (type === "cryptocurrency" && meta?.trackId) {
+      sentCount = await telegramBot.sendCryptoTransactionAlertToAllAdmins(
+        message,
+        String(meta.trackId),
+        priority
+      );
+    } else {
+      // fallback to plain broadcast
+      sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
+        message,
+        priority
+      );
+    }
 
     return res.json({
       success: true,
       data: {
-        message: "Failed transaction alert sent successfully",
+        message: "Notification sent successfully",
         recipients: sentCount,
         priority,
+        type: type || "generic",
         timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error("Error sending failed transaction alert:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Internal server error",
-    });
+    console.error("Error sending notification:", error);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 });
 

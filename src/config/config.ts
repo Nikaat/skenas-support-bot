@@ -11,7 +11,7 @@ const {
   REDIS_HOST,
   REDIS_PORT,
   REDIS_PASSWORD,
-  SKENAS_BASE_URL,
+  SKENAS_API_BASE_URL,
 } = process.env;
 
 export const config = {
@@ -32,8 +32,10 @@ export const config = {
     port: Number(REDIS_PORT) || 6379,
     password: REDIS_PASSWORD || "",
   },
+  skenas: {
+    apiBaseUrl: SKENAS_API_BASE_URL || "http://localhost:3000",
+  },
   allowedOrigins: ALLOWED_ORIGINS || "",
-  skenasbaseurl: SKENAS_BASE_URL || "",
 };
 
 // Validation
@@ -73,8 +75,4 @@ if (!config.redis.port) {
 
 if (!config.redis.password) {
   throw new Error("REDIS_PASSWORD is required");
-}
-
-if (!config.skenasbaseurl) {
-  throw new Error("SKENAS_BASE_URL is required");
 }

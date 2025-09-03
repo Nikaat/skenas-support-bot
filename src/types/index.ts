@@ -5,7 +5,7 @@ export interface IAdminSession {
   lastActivity: Date;
 }
 
-// Invoice status enum
+// Invoice status enum for crypto transactions
 export enum INVOICE_STATUS {
   PAID = "paid",
   REJECTED = "rejected",
@@ -13,9 +13,9 @@ export enum INVOICE_STATUS {
   VALIDATING = "validating",
 }
 
-// Invoice update request interface
-export interface IInvoiceUpdateRequest {
+// Crypto invoice confirmation interface
+export interface ICryptoInvoiceConfirmation {
   trackId: string;
-  newStatus: INVOICE_STATUS;
-  referenceId?: string;
+  status: INVOICE_STATUS;
+  referenceNumber?: string;
 }
