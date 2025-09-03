@@ -54,21 +54,11 @@ export class TelegramBot {
       inline_keyboard: [
         [
           {
-            text: "✅ تایید (PAID)",
+            text: "✅ تایید",
             callback_data: `crypto:${INVOICE_STATUS.PAID}:${trackId}`,
           },
           {
-            text: "🟡 درحال اعتبارسنجی",
-            callback_data: `crypto:${INVOICE_STATUS.VALIDATING}:${trackId}`,
-          },
-        ],
-        [
-          {
-            text: "⏳ معلق (PENDING)",
-            callback_data: `crypto:${INVOICE_STATUS.PENDING}:${trackId}`,
-          },
-          {
-            text: "❌ رد (REJECTED)",
+            text: "❌ رد",
             callback_data: `crypto:${INVOICE_STATUS.REJECTED}:${trackId}`,
           },
         ],
