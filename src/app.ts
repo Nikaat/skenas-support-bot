@@ -123,7 +123,7 @@ app.post("/api/notify", async (req, res) => {
     }
 
     // Validate request body
-    const { message, priority = "normal" } = req.body;
+    const { message, priority = "normal", trackId } = req.body;
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({
@@ -135,7 +135,8 @@ app.post("/api/notify", async (req, res) => {
     // Send failed transaction alert to all authenticated admins
     const sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
       message,
-      priority
+      priority,
+      trackId
     );
 
     return res.json({
