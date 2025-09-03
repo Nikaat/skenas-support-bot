@@ -109,12 +109,10 @@ app.post("/api/notify", async (req, res) => {
     // auth as before ...
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          error: "Missing or invalid authorization header",
-        });
+      return res.status(401).json({
+        success: false,
+        error: "Missing or invalid authorization header",
+      });
     }
     const apiKey = authHeader.substring(7);
     if (apiKey !== config.bot.apiKey) {
@@ -137,18 +135,19 @@ app.post("/api/notify", async (req, res) => {
     };
 
     if (!message || typeof message !== "string") {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Message is required and must be a string",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Message is required and must be a string",
+      });
     }
 
     let sentCount = 0;
 
     // If cryptocurrency and we have trackId, send with inline keyboard
     if (type === "cryptocurrency" && meta?.trackId) {
+      console.log(
+        `📱 Sending crypto transaction alert for trackId: ${meta.trackId}`
+      );
       sentCount = await telegramBot.sendCryptoTransactionAlertToAllAdmins(
         message,
         String(meta.trackId),
@@ -156,11 +155,16 @@ app.post("/api/notify", async (req, res) => {
       );
     } else {
       // fallback to plain broadcast
+      console.log(
+        `📱 Sending failed transaction alert (type: ${type || "generic"})`
+      );
       sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
         message,
         priority
       );
     }
+
+    console.log(`📊 Notification sent to ${sentCount} admin(s)`);
 
     return res.json({
       success: true,

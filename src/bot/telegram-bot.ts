@@ -313,27 +313,43 @@ export class TelegramBot {
   ): Promise<number> {
     try {
       const activeSessions = await adminAuthService.getActiveAdminSessions();
+      console.log(`🔍 Found ${activeSessions.length} active admin sessions`);
+
+      if (activeSessions.length === 0) {
+        console.warn(
+          "⚠️ No active admin sessions found - notifications cannot be sent"
+        );
+        return 0;
+      }
+
       let sentCount = 0;
 
       for (const session of activeSessions) {
         try {
+          console.log(
+            `📤 Sending failed transaction alert to admin ${session.phoneNumber} (chatId: ${session.chatId})`
+          );
           await this.sendFailedTransactionAlert(
             session.chatId,
             message,
             priority
           );
           sentCount++;
+          console.log(`✅ Successfully sent to admin ${session.phoneNumber}`);
         } catch (error) {
           console.error(
-            `Failed to send failed transaction alert to admin ${session.phoneNumber}:`,
+            `❌ Failed to send failed transaction alert to admin ${session.phoneNumber}:`,
             error
           );
         }
       }
 
+      console.log(
+        `📊 Total sent: ${sentCount}/${activeSessions.length} notifications`
+      );
       return sentCount;
     } catch (error) {
-      console.error("Error sending notifications to all admins:", error);
+      console.error("❌ Error sending notifications to all admins:", error);
       throw error;
     }
   }
