@@ -33,7 +33,7 @@ export const config = {
     password: REDIS_PASSWORD || "",
   },
   skenas: {
-    apiBaseUrl: SKENAS_API_BASE_URL || "http://localhost:3000",
+    apiBaseUrl: SKENAS_API_BASE_URL || "",
   },
   allowedOrigins: ALLOWED_ORIGINS || "",
 };

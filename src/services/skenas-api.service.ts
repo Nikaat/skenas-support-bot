@@ -33,7 +33,7 @@ export class SkenasApiService {
       }
 
       const response = await axios.post(
-        `${this.baseUrl}/api/crypto-invoice/update-status`,
+        `${this.baseUrl}/api/telegram-bot/cryptocurrency/update-invoice`,
         {
           trackId: confirmation.trackId,
           newStatus: confirmation.status,
