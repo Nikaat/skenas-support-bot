@@ -97,9 +97,31 @@ export class SkenasApiService {
             );
           }
         } else if (error.request) {
-          console.error("Main app API request failed - no response received");
+          // Check for connection refused errors
+          if (error.code === "ECONNREFUSED") {
+            console.error(
+              `❌ Connection Refused: Main app server is not running at ${this.baseUrl}`
+            );
+            console.error(
+              "💡 Please ensure the main Skenas application is running and accessible"
+            );
+          } else if (error.code === "ENOTFOUND") {
+            console.error(`❌ Host Not Found: Cannot resolve ${this.baseUrl}`);
+            console.error(
+              "💡 Please check the SKENAS_API_BASE_URL configuration"
+            );
+          } else if (error.code === "ETIMEDOUT") {
+            console.error(
+              "❌ Request Timeout: Main app server did not respond within timeout period"
+            );
+          } else {
+            console.error(
+              "❌ Main app API request failed - no response received"
+            );
+            console.error(`Error code: ${error.code}`);
+          }
         } else {
-          console.error("Main app API request setup failed:", error.message);
+          console.error("❌ Main app API request setup failed:", error.message);
         }
       }
 
