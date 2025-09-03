@@ -36,8 +36,8 @@ export class SkenasApiService {
         `${this.baseUrl}/api/crypto-invoice/update-status`,
         {
           trackId: confirmation.trackId,
-          status: confirmation.status,
-          referenceNumber: confirmation.referenceNumber,
+          newStatus: confirmation.status,
+          referenceId: confirmation.referenceNumber,
         },
         {
           headers: {
@@ -49,13 +49,32 @@ export class SkenasApiService {
       );
 
       if (response.status === 200) {
-        console.log(
-          `✅ Crypto invoice status updated successfully for trackId: ${confirmation.trackId}`
-        );
-        return true;
+        const responseData = response.data;
+
+        if (responseData.status === "DONE") {
+          console.log(
+            `✅ Crypto invoice status updated successfully for trackId: ${confirmation.trackId}`
+          );
+          if (responseData.result?.message) {
+            console.log(`📝 Response message: ${responseData.result.message}`);
+          }
+          return true;
+        } else if (responseData.status === "FAILED") {
+          console.error(
+            `❌ Crypto invoice status update failed for trackId: ${confirmation.trackId}`
+          );
+          if (responseData.error) {
+            console.error(`Error code: ${responseData.error.code}`);
+            console.error(`Error message: ${responseData.error.message}`);
+          }
+          return false;
+        } else {
+          console.warn(`⚠️ Unexpected response status: ${responseData.status}`);
+          return false;
+        }
       } else {
         console.warn(
-          `⚠️ Crypto invoice status update returned status: ${response.status}`
+          `⚠️ Crypto invoice status update returned HTTP status: ${response.status}`
         );
         return false;
       }
