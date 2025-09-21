@@ -147,7 +147,7 @@ export class TelegramBot {
       await ctx.answerCbQuery("وضعیت انتخاب شد");
       await ctx.reply(
         "🔎 لطفاً شناسه مرجع (Reference ID) را وارد کنید.\n" +
-          "اگر ندارید، یک خط تیره `-` ارسال کنید.",
+          "اگر ندارید، عدد `0` ارسال کنید.",
         { parse_mode: "Markdown" }
       );
     } catch (error) {
@@ -183,7 +183,18 @@ export class TelegramBot {
       // If we have a pending crypto action, treat text as referenceId
       const pending = await pendingActionService.get(chatId.toString());
       if (pending && pending.kind === "crypto_confirm") {
-        const referenceId = text?.trim() === "-" ? undefined : text?.trim();
+        const trimmedText = text?.trim();
+        const referenceId = trimmedText === "0" ? undefined : trimmedText;
+
+        // Validate referenceId if provided (should only contain digits 0-9)
+        if (referenceId && !/^[0-9]+$/.test(referenceId)) {
+          await ctx.reply(
+            "❌ شناسه مرجع باید فقط شامل اعداد باشد.\n" +
+              "لطفاً شناسه مرجع صحیح را وارد کنید یا برای عدم وجود شناسه، عدد `0` ارسال کنید.",
+            { parse_mode: "Markdown" }
+          );
+          return;
+        }
 
         const ok = await skenasApiService.updateCryptoInvoiceStatus({
           trackId: pending.trackId,

@@ -3,8 +3,6 @@ import cors from "cors";
 import { config } from "./config/config";
 import { telegramBot } from "./bot/telegram-bot";
 import { adminAuthService } from "./services/admin-auth.service";
-import { skenasApiService } from "./services/skenas-api.service";
-import { ICryptoInvoiceConfirmation } from "./types";
 
 const app = express();
 
