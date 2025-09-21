@@ -87,16 +87,19 @@ export class TelegramBot {
     const activeSessions = await adminAuthService.getActiveAdminSessions();
     let sent = 0;
     for (const s of activeSessions) {
-      try {
-        await this.sendCryptoTransactionAlert(
-          s.chatId,
-          message,
-          trackId,
-          priority
-        );
-        sent++;
-      } catch (e) {
-        console.error(`Failed to send crypto alert to ${s.phoneNumber}`, e);
+      // Only send crypto alerts to authorized admins
+      if (adminAuthService.isCryptoAuthorizedAdmin(s.phoneNumber)) {
+        try {
+          await this.sendCryptoTransactionAlert(
+            s.chatId,
+            message,
+            trackId,
+            priority
+          );
+          sent++;
+        } catch (e) {
+          console.error(`Failed to send crypto alert to ${s.phoneNumber}`, e);
+        }
       }
     }
     return sent;
@@ -112,6 +115,14 @@ export class TelegramBot {
       const session = await adminAuthService.getAdminSession(chatId.toString());
       if (!session) {
         await ctx.answerCbQuery("ابتدا با /start احراز هویت کنید");
+        return;
+      }
+
+      // Check if this admin is authorized for crypto operations
+      if (!adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)) {
+        await ctx.answerCbQuery(
+          "شما مجوز تغییر وضعیت تراکنش‌های ارز دیجیتال را ندارید"
+        );
         return;
       }
 

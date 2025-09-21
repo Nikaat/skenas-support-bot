@@ -86,6 +86,13 @@ export class AdminAuthService {
   // }
 
   /**
+   * Check if an admin is authorized for crypto operations
+   */
+  public isCryptoAuthorizedAdmin(phoneNumber: string): boolean {
+    return config.admin.cryptoAuthorizedAdmins.includes(phoneNumber);
+  }
+
+  /**
    * Get all active admin sessions
    */
   public async getActiveAdminSessions(): Promise<IAdminSession[]> {

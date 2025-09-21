@@ -6,6 +6,7 @@ const {
   ALLOWED_ORIGINS,
   TELEGRAM_BOT_TOKEN,
   ADMIN_PHONE_NUMBERS,
+  CRYPTO_AUTHORIZED_ADMINS,
   TELEGRAM_BOT_API_KEY,
   PORT,
   REDIS_HOST,
@@ -21,6 +22,9 @@ export const config = {
   admin: {
     phoneNumbers: ADMIN_PHONE_NUMBERS
       ? ADMIN_PHONE_NUMBERS.split(",").map((p) => p.trim())
+      : [],
+    cryptoAuthorizedAdmins: CRYPTO_AUTHORIZED_ADMINS
+      ? CRYPTO_AUTHORIZED_ADMINS.split(",").map((p) => p.trim())
       : [],
   },
   bot: {
@@ -46,6 +50,12 @@ if (!config.telegram.botToken) {
 if (config.admin.phoneNumbers.length === 0) {
   throw new Error(
     "ADMIN_PHONE_NUMBERS is required and must contain at least one phone number"
+  );
+}
+
+if (config.admin.cryptoAuthorizedAdmins.length === 0) {
+  throw new Error(
+    "CRYPTO_AUTHORIZED_ADMINS is required and must contain at least one phone number"
   );
 }
 
