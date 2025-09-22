@@ -106,6 +106,20 @@ export class TelegramBot {
     };
   }
 
+  // Build read-only keyboard for non-crypto-authorized admins
+  private buildReadOnlyInlineKeyboard(trackId: string): InlineKeyboardMarkup {
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: "👁️ مشاهده وضعیت",
+            callback_data: `processed:${trackId}`, // Non-actionable callback
+          },
+        ],
+      ],
+    };
+  }
+
   // ---------- Crypto alerts (single + broadcast) ----------
   public async sendCryptoTransactionAlert(
     chatId: string,
@@ -125,8 +139,18 @@ export class TelegramBot {
         processedInvoice.processedBy
       );
     } else {
-      // Show action buttons for unprocessed invoice
-      replyMarkup = this.buildCryptoInlineKeyboard(trackId);
+      // Check if this admin is crypto-authorized to show action buttons
+      const session = await adminAuthService.getAdminSession(chatId);
+      if (
+        session &&
+        adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)
+      ) {
+        // Show action buttons for crypto-authorized admins
+        replyMarkup = this.buildCryptoInlineKeyboard(trackId);
+      } else {
+        // Show read-only status for non-crypto-authorized admins
+        replyMarkup = this.buildReadOnlyInlineKeyboard(trackId);
+      }
     }
 
     await this.bot.telegram.sendMessage(chatId, message, {
@@ -143,19 +167,17 @@ export class TelegramBot {
     const activeSessions = await adminAuthService.getActiveAdminSessions();
     let sent = 0;
     for (const s of activeSessions) {
-      // Only send crypto alerts to authorized admins
-      if (adminAuthService.isCryptoAuthorizedAdmin(s.phoneNumber)) {
-        try {
-          await this.sendCryptoTransactionAlert(
-            s.chatId,
-            message,
-            trackId,
-            priority
-          );
-          sent++;
-        } catch (e) {
-          console.error(`Failed to send crypto alert to ${s.phoneNumber}`, e);
-        }
+      // Send crypto alerts to ALL admins, but only crypto-authorized admins can take actions
+      try {
+        await this.sendCryptoTransactionAlert(
+          s.chatId,
+          message,
+          trackId,
+          priority
+        );
+        sent++;
+      } catch (e) {
+        console.error(`Failed to send crypto alert to ${s.phoneNumber}`, e);
       }
     }
     return sent;
