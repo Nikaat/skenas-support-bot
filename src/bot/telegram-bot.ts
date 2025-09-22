@@ -13,6 +13,7 @@ import { statusCommand } from "../commands/status.command";
 import { INVOICE_STATUS } from "../types";
 import { pendingActionService } from "../services/pending-action.service";
 import { skenasApiService } from "../services/skenas-api.service";
+import { processedInvoiceService } from "../services/processed-invoice.service";
 
 function normalizePhone(p: string): string {
   // Normalize to "+<country><number>" (E.164-ish)
@@ -84,6 +85,27 @@ export class TelegramBot {
     };
   }
 
+  // Build keyboard for already processed invoices
+  private buildProcessedInlineKeyboard(
+    trackId: string,
+    status: INVOICE_STATUS,
+    processedBy: string
+  ): InlineKeyboardMarkup {
+    const statusEmoji = status === INVOICE_STATUS.PAID ? "✅" : "❌";
+    const statusText = status === INVOICE_STATUS.PAID ? "تایید شده" : "رد شده";
+
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: `${statusEmoji} ${statusText} توسط ${processedBy}`,
+            callback_data: `processed:${trackId}`, // Non-actionable callback
+          },
+        ],
+      ],
+    };
+  }
+
   // ---------- Crypto alerts (single + broadcast) ----------
   public async sendCryptoTransactionAlert(
     chatId: string,
@@ -91,9 +113,25 @@ export class TelegramBot {
     trackId: string,
     priority: string = "normal"
   ): Promise<void> {
+    // Check if this invoice has already been processed
+    const processedInvoice = await processedInvoiceService.isProcessed(trackId);
+
+    let replyMarkup;
+    if (processedInvoice) {
+      // Show processed status instead of action buttons
+      replyMarkup = this.buildProcessedInlineKeyboard(
+        trackId,
+        processedInvoice.status,
+        processedInvoice.processedBy
+      );
+    } else {
+      // Show action buttons for unprocessed invoice
+      replyMarkup = this.buildCryptoInlineKeyboard(trackId);
+    }
+
     await this.bot.telegram.sendMessage(chatId, message, {
       parse_mode: "HTML",
-      reply_markup: this.buildCryptoInlineKeyboard(trackId),
+      reply_markup: replyMarkup,
     });
   }
 
@@ -169,6 +207,17 @@ export class TelegramBot {
           return;
         }
 
+        // Check if invoice is already processed
+        const processedInvoice = await processedInvoiceService.isProcessed(
+          trackId
+        );
+        if (processedInvoice) {
+          await ctx.answerCbQuery(
+            `این فاکتور قبلاً توسط ${processedInvoice.processedBy} پردازش شده است`
+          );
+          return;
+        }
+
         // Immediately update with referenceNumber "000000"
         const ok = await skenasApiService.updateCryptoInvoiceStatus({
           trackId,
@@ -177,6 +226,14 @@ export class TelegramBot {
         });
 
         if (ok) {
+          // Mark as processed by this admin
+          await processedInvoiceService.markAsProcessed(
+            trackId,
+            statusRaw as INVOICE_STATUS,
+            session.phoneNumber,
+            "000000"
+          );
+
           try {
             await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
           } catch {}
@@ -214,6 +271,17 @@ export class TelegramBot {
           return;
         }
 
+        // Check if invoice is already processed
+        const processedInvoice = await processedInvoiceService.isProcessed(
+          trackId
+        );
+        if (processedInvoice) {
+          await ctx.answerCbQuery(
+            `این فاکتور قبلاً توسط ${processedInvoice.processedBy} پردازش شده است`
+          );
+          return;
+        }
+
         await pendingActionService.clear(chatId.toString());
         await pendingActionService.set(chatId.toString(), {
           kind: "crypto_confirm",
@@ -237,6 +305,36 @@ export class TelegramBot {
             ),
           }
         );
+        return;
+      }
+
+      // Handle processed invoice info requests
+      if (data.startsWith("processed:")) {
+        const [, trackId] = data.split(":");
+        if (!trackId) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        const processedInvoice = await processedInvoiceService.isProcessed(
+          trackId
+        );
+        if (processedInvoice) {
+          const statusText =
+            processedInvoice.status === INVOICE_STATUS.PAID
+              ? "تایید شده"
+              : "رد شده";
+          const statusEmoji =
+            processedInvoice.status === INVOICE_STATUS.PAID ? "✅" : "❌";
+
+          await ctx.answerCbQuery(
+            `${statusEmoji} ${statusText} توسط ${
+              processedInvoice.processedBy
+            } در ${processedInvoice.processedAt.toLocaleString("fa-IR")}`
+          );
+        } else {
+          await ctx.answerCbQuery("اطلاعات فاکتور یافت نشد");
+        }
         return;
       }
 
@@ -294,6 +392,14 @@ export class TelegramBot {
         });
 
         if (ok) {
+          // Mark as processed by this admin
+          await processedInvoiceService.markAsProcessed(
+            pending.trackId,
+            pending.status as INVOICE_STATUS,
+            session.phoneNumber,
+            referenceId
+          );
+
           await ctx.reply(
             `✅ به‌روزرسانی فاکتور ارز دیجیتال با موفقیت انجام شد.\n` +
               `🆔 TrackId: <code>${pending.trackId}</code>\n` +
