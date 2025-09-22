@@ -66,6 +66,24 @@ export class TelegramBot {
     };
   }
 
+  // Add this helper below buildCryptoInlineKeyboard(...)
+  private buildNoRefInlineKeyboard(
+    trackId: string,
+    status: INVOICE_STATUS
+  ): InlineKeyboardMarkup {
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: "📎 شناسه مرجع ندارم",
+            // format: crypto_ref:noref:<status>:<trackId>
+            callback_data: `crypto_ref:noref:${status}:${trackId}`,
+          },
+        ],
+      ],
+    };
+  }
+
   // ---------- Crypto alerts (single + broadcast) ----------
   public async sendCryptoTransactionAlert(
     chatId: string,
@@ -111,14 +129,12 @@ export class TelegramBot {
       const chatId = ctx.chat?.id;
       if (!chatId) return;
 
-      // ensure admin session exists
       const session = await adminAuthService.getAdminSession(chatId.toString());
       if (!session) {
         await ctx.answerCbQuery("ابتدا با /start احراز هویت کنید");
         return;
       }
 
-      // Check if this admin is authorized for crypto operations
       if (!adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)) {
         await ctx.answerCbQuery(
           "شما مجوز تغییر وضعیت تراکنش‌های ارز دیجیتال را ندارید"
@@ -128,39 +144,103 @@ export class TelegramBot {
 
       const cq: any = (ctx as any).callbackQuery;
       const data: string | undefined = cq && "data" in cq ? cq.data : undefined;
-      if (!data || !data.startsWith("crypto:")) {
+      if (!data) {
         await ctx.answerCbQuery();
         return;
       }
 
-      // format: crypto:<status>:<trackId>
-      const [, statusRaw, trackId] = data.split(":");
+      // New path: user clicked "شناسه مرجع ندارم"
+      if (data.startsWith("crypto_ref:")) {
+        // format: crypto_ref:noref:<status>:<trackId>
+        const [, refType, statusRaw, trackId] = data.split(":");
 
-      const allowed = new Set(Object.values(INVOICE_STATUS));
-      if (!statusRaw || !trackId || !allowed.has(statusRaw as INVOICE_STATUS)) {
-        await ctx.answerCbQuery("داده نامعتبر است");
+        if (refType !== "noref") {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        const allowed = new Set(Object.values(INVOICE_STATUS));
+        if (
+          !statusRaw ||
+          !trackId ||
+          !allowed.has(statusRaw as INVOICE_STATUS)
+        ) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        // Immediately update with referenceNumber "000000"
+        const ok = await skenasApiService.updateCryptoInvoiceStatus({
+          trackId,
+          status: statusRaw as any,
+          referenceNumber: "000000",
+        });
+
+        if (ok) {
+          try {
+            await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+          } catch {}
+
+          await pendingActionService.clear(chatId.toString());
+          await ctx.answerCbQuery("ثبت شد");
+          await ctx.reply(
+            `✅ به‌روزرسانی انجام شد (بدون شناسه مرجع).\n` +
+              `🆔 TrackId: <code>${trackId}</code>\n` +
+              `📌 Status: <b>${statusRaw.toUpperCase()}</b>\n` +
+              `🔗 Ref: <code>000000</code>`,
+            { parse_mode: "HTML" }
+          );
+        } else {
+          await ctx.answerCbQuery("خطا در به‌روزرسانی");
+          await ctx.reply(
+            `❌ به‌روزرسانی وضعیت ناموفق بود. لطفاً لاگ‌ها را بررسی کنید یا دوباره تلاش کنید.`
+          );
+        }
         return;
       }
 
-      // Clear any previous pending state and set new one
-      await pendingActionService.clear(chatId.toString());
-      await pendingActionService.set(chatId.toString(), {
-        kind: "crypto_confirm",
-        status: statusRaw as INVOICE_STATUS,
-        trackId,
-      });
+      // Existing path: status selection
+      if (data.startsWith("crypto:")) {
+        // format: crypto:<status>:<trackId>
+        const [, statusRaw, trackId] = data.split(":");
 
-      // Optional: remove buttons from original message
-      try {
-        await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
-      } catch {}
+        const allowed = new Set(Object.values(INVOICE_STATUS));
+        if (
+          !statusRaw ||
+          !trackId ||
+          !allowed.has(statusRaw as INVOICE_STATUS)
+        ) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
 
-      await ctx.answerCbQuery("وضعیت انتخاب شد");
-      await ctx.reply(
-        "🔎 لطفاً شناسه مرجع (Reference ID) را وارد کنید.\n" +
-          "اگر ندارید، عدد `0` ارسال کنید.",
-        { parse_mode: "Markdown" }
-      );
+        await pendingActionService.clear(chatId.toString());
+        await pendingActionService.set(chatId.toString(), {
+          kind: "crypto_confirm",
+          status: statusRaw as INVOICE_STATUS,
+          trackId,
+        });
+
+        try {
+          await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+        } catch {}
+
+        await ctx.answerCbQuery("وضعیت انتخاب شد");
+        await ctx.reply(
+          "🔎 لطفاً شناسه مرجع (Reference ID) را وارد کنید.\n" +
+            "اگر ندارید، دکمهٔ «شناسه مرجع ندارم» را بزنید.",
+          {
+            parse_mode: "Markdown",
+            reply_markup: this.buildNoRefInlineKeyboard(
+              trackId,
+              statusRaw as INVOICE_STATUS
+            ),
+          }
+        );
+        return;
+      }
+
+      await ctx.answerCbQuery();
     } catch (error) {
       console.error("Callback handler error:", error);
       try {
