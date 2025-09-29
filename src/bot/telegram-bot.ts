@@ -120,6 +120,58 @@ export class TelegramBot {
     };
   }
 
+  // ---------- Inline keyboard for cash out ----------
+  private buildCashOutInlineKeyboard(trackId: string): InlineKeyboardMarkup {
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: "✅ تایید",
+            callback_data: `cashout:${INVOICE_STATUS.PAID}:${trackId}`,
+          },
+          {
+            text: "❌ رد",
+            callback_data: `cashout:${INVOICE_STATUS.REJECTED}:${trackId}`,
+          },
+        ],
+      ],
+    };
+  }
+
+  // Add this helper for cash out no reference
+  private buildCashOutNoRefInlineKeyboard(
+    trackId: string,
+    status: INVOICE_STATUS
+  ): InlineKeyboardMarkup {
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: "📎 شناسه مرجع ندارم",
+            // format: cashout_ref:noref:<status>:<trackId>
+            callback_data: `cashout_ref:noref:${status}:${trackId}`,
+          },
+        ],
+      ],
+    };
+  }
+
+  // Build read-only keyboard for non-crypto-authorized admins (cash out)
+  private buildCashOutReadOnlyInlineKeyboard(
+    trackId: string
+  ): InlineKeyboardMarkup {
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: "👁️ مشاهده وضعیت",
+            callback_data: `processed:${trackId}`, // Non-actionable callback
+          },
+        ],
+      ],
+    };
+  }
+
   // ---------- Crypto alerts (single + broadcast) ----------
   public async sendCryptoTransactionAlert(
     chatId: string,
@@ -178,6 +230,69 @@ export class TelegramBot {
         sent++;
       } catch (e) {
         console.error(`Failed to send crypto alert to ${s.phoneNumber}`, e);
+      }
+    }
+    return sent;
+  }
+
+  // ---------- Cash out alerts (single + broadcast) ----------
+  public async sendCashOutTransactionAlert(
+    chatId: string,
+    message: string,
+    trackId: string,
+    priority: string = "normal"
+  ): Promise<void> {
+    // Check if this invoice has already been processed
+    const processedInvoice = await processedInvoiceService.isProcessed(trackId);
+
+    let replyMarkup;
+    if (processedInvoice) {
+      // Show processed status instead of action buttons
+      replyMarkup = this.buildProcessedInlineKeyboard(
+        trackId,
+        processedInvoice.status,
+        processedInvoice.processedBy
+      );
+    } else {
+      // Check if this admin is crypto-authorized to show action buttons
+      const session = await adminAuthService.getAdminSession(chatId);
+      if (
+        session &&
+        adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)
+      ) {
+        // Show action buttons for crypto-authorized admins
+        replyMarkup = this.buildCashOutInlineKeyboard(trackId);
+      } else {
+        // Show read-only status for non-crypto-authorized admins
+        replyMarkup = this.buildCashOutReadOnlyInlineKeyboard(trackId);
+      }
+    }
+
+    await this.bot.telegram.sendMessage(chatId, message, {
+      parse_mode: "HTML",
+      reply_markup: replyMarkup,
+    });
+  }
+
+  public async sendCashOutTransactionAlertToAllAdmins(
+    message: string,
+    trackId: string,
+    priority: string = "normal"
+  ): Promise<number> {
+    const activeSessions = await adminAuthService.getActiveAdminSessions();
+    let sent = 0;
+    for (const s of activeSessions) {
+      // Send cash out alerts to ALL admins, but only crypto-authorized admins can take actions
+      try {
+        await this.sendCashOutTransactionAlert(
+          s.chatId,
+          message,
+          trackId,
+          priority
+        );
+        sent++;
+      } catch (e) {
+        console.error(`Failed to send cash out alert to ${s.phoneNumber}`, e);
       }
     }
     return sent;
@@ -330,6 +445,127 @@ export class TelegramBot {
         return;
       }
 
+      // Handle cash out no reference path
+      if (data.startsWith("cashout_ref:")) {
+        // format: cashout_ref:noref:<status>:<trackId>
+        const [, refType, statusRaw, trackId] = data.split(":");
+
+        if (refType !== "noref") {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        const allowed = new Set(Object.values(INVOICE_STATUS));
+        if (
+          !statusRaw ||
+          !trackId ||
+          !allowed.has(statusRaw as INVOICE_STATUS)
+        ) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        // Check if invoice is already processed
+        const processedInvoice = await processedInvoiceService.isProcessed(
+          trackId
+        );
+        if (processedInvoice) {
+          await ctx.answerCbQuery(
+            `این فاکتور قبلاً توسط ${processedInvoice.processedBy} پردازش شده است`
+          );
+          return;
+        }
+
+        // Immediately update with referenceNumber "000000"
+        const ok = await skenasApiService.updateCashOutInvoiceStatus({
+          trackId,
+          status: statusRaw as any,
+          referenceNumber: "000000",
+        });
+
+        if (ok) {
+          // Mark as processed by this admin
+          await processedInvoiceService.markAsProcessed(
+            trackId,
+            statusRaw as INVOICE_STATUS,
+            session.phoneNumber,
+            "000000"
+          );
+
+          try {
+            await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+          } catch {}
+
+          await pendingActionService.clear(chatId.toString());
+          await ctx.answerCbQuery("ثبت شد");
+          await ctx.reply(
+            `✅ به‌روزرسانی انجام شد (بدون شناسه مرجع).\n` +
+              `🆔 TrackId: <code>${trackId}</code>\n` +
+              `📌 Status: <b>${statusRaw.toUpperCase()}</b>\n` +
+              `🔗 Ref: <code>000000</code>`,
+            { parse_mode: "HTML" }
+          );
+        } else {
+          await ctx.answerCbQuery("خطا در به‌روزرسانی");
+          await ctx.reply(
+            `❌ به‌روزرسانی وضعیت ناموفق بود. لطفاً لاگ‌ها را بررسی کنید یا دوباره تلاش کنید.`
+          );
+        }
+        return;
+      }
+
+      // Handle cash out status selection
+      if (data.startsWith("cashout:")) {
+        // format: cashout:<status>:<trackId>
+        const [, statusRaw, trackId] = data.split(":");
+
+        const allowed = new Set(Object.values(INVOICE_STATUS));
+        if (
+          !statusRaw ||
+          !trackId ||
+          !allowed.has(statusRaw as INVOICE_STATUS)
+        ) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        // Check if invoice is already processed
+        const processedInvoice = await processedInvoiceService.isProcessed(
+          trackId
+        );
+        if (processedInvoice) {
+          await ctx.answerCbQuery(
+            `این فاکتور قبلاً توسط ${processedInvoice.processedBy} پردازش شده است`
+          );
+          return;
+        }
+
+        await pendingActionService.clear(chatId.toString());
+        await pendingActionService.set(chatId.toString(), {
+          kind: "cashout_confirm",
+          status: statusRaw as INVOICE_STATUS,
+          trackId,
+        });
+
+        try {
+          await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+        } catch {}
+
+        await ctx.answerCbQuery("وضعیت انتخاب شد");
+        await ctx.reply(
+          "🔎 لطفاً شناسه مرجع (Reference ID) را وارد کنید.\n" +
+            "اگر ندارید، دکمهٔ «شناسه مرجع ندارم» را بزنید.",
+          {
+            parse_mode: "Markdown",
+            reply_markup: this.buildCashOutNoRefInlineKeyboard(
+              trackId,
+              statusRaw as INVOICE_STATUS
+            ),
+          }
+        );
+        return;
+      }
+
       // Handle processed invoice info requests
       if (data.startsWith("processed:")) {
         const [, trackId] = data.split(":");
@@ -391,9 +627,13 @@ export class TelegramBot {
         return;
       }
 
-      // If we have a pending crypto action, treat text as referenceId
+      // If we have a pending action, treat text as referenceId
       const pending = await pendingActionService.get(chatId.toString());
-      if (pending && pending.kind === "crypto_confirm") {
+      if (
+        pending &&
+        (pending.kind === "crypto_confirm" ||
+          pending.kind === "cashout_confirm")
+      ) {
         const trimmedText = text?.trim();
         const referenceId = trimmedText === "0" ? undefined : trimmedText;
 
@@ -407,11 +647,24 @@ export class TelegramBot {
           return;
         }
 
-        const ok = await skenasApiService.updateCryptoInvoiceStatus({
-          trackId: pending.trackId,
-          status: pending.status as any, // server: 'paid' | 'rejected' | 'pending' | 'validating'
-          referenceNumber: referenceId,
-        });
+        let ok = false;
+        let transactionType = "";
+
+        if (pending.kind === "crypto_confirm") {
+          ok = await skenasApiService.updateCryptoInvoiceStatus({
+            trackId: pending.trackId,
+            status: pending.status as any, // server: 'paid' | 'rejected' | 'pending' | 'validating'
+            referenceNumber: referenceId,
+          });
+          transactionType = "ارز دیجیتال";
+        } else if (pending.kind === "cashout_confirm") {
+          ok = await skenasApiService.updateCashOutInvoiceStatus({
+            trackId: pending.trackId,
+            status: pending.status as any, // server: 'paid' | 'rejected' | 'pending' | 'validating'
+            referenceNumber: referenceId,
+          });
+          transactionType = "خروج وجه";
+        }
 
         if (ok) {
           // Mark as processed by this admin
@@ -423,7 +676,7 @@ export class TelegramBot {
           );
 
           await ctx.reply(
-            `✅ به‌روزرسانی فاکتور ارز دیجیتال با موفقیت انجام شد.\n` +
+            `✅ به‌روزرسانی فاکتور ${transactionType} با موفقیت انجام شد.\n` +
               `🆔 TrackId: <code>${pending.trackId}</code>\n` +
               `📌 Status: <b>${pending.status.toUpperCase()}</b>\n` +
               `🔗 Ref: <code>${referenceId || "—"}</code>`,
