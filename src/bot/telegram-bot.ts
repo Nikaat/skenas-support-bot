@@ -193,14 +193,28 @@ export class TelegramBot {
     } else {
       // Check if this admin is crypto-authorized to show action buttons
       const session = await adminAuthService.getAdminSession(chatId);
+      console.log(`🔍 Crypto authorization check for chatId: ${chatId}`);
+      console.log(`📱 Session phone: ${session?.phoneNumber}`);
+      console.log(
+        `✅ Is crypto authorized: ${
+          session
+            ? adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)
+            : false
+        }`
+      );
+
       if (
         session &&
         adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)
       ) {
         // Show action buttons for crypto-authorized admins
+        console.log(`🎯 Showing crypto action buttons for trackId: ${trackId}`);
         replyMarkup = this.buildCryptoInlineKeyboard(trackId);
       } else {
         // Show read-only status for non-crypto-authorized admins
+        console.log(
+          `👁️ Showing crypto read-only buttons for trackId: ${trackId}`
+        );
         replyMarkup = this.buildReadOnlyInlineKeyboard(trackId);
       }
     }
@@ -256,14 +270,30 @@ export class TelegramBot {
     } else {
       // Check if this admin is crypto-authorized to show action buttons
       const session = await adminAuthService.getAdminSession(chatId);
+      console.log(`🔍 Cash out authorization check for chatId: ${chatId}`);
+      console.log(`📱 Session phone: ${session?.phoneNumber}`);
+      console.log(
+        `✅ Is crypto authorized: ${
+          session
+            ? adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)
+            : false
+        }`
+      );
+
       if (
         session &&
         adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)
       ) {
         // Show action buttons for crypto-authorized admins
+        console.log(
+          `🎯 Showing cash out action buttons for trackId: ${trackId}`
+        );
         replyMarkup = this.buildCashOutInlineKeyboard(trackId);
       } else {
         // Show read-only status for non-crypto-authorized admins
+        console.log(
+          `👁️ Showing cash out read-only buttons for trackId: ${trackId}`
+        );
         replyMarkup = this.buildCashOutReadOnlyInlineKeyboard(trackId);
       }
     }
@@ -311,9 +341,7 @@ export class TelegramBot {
       }
 
       if (!adminAuthService.isCryptoAuthorizedAdmin(session.phoneNumber)) {
-        await ctx.answerCbQuery(
-          "شما مجوز تغییر وضعیت تراکنش‌های ارز دیجیتال را ندارید"
-        );
+        await ctx.answerCbQuery("شما مجوز تغییر وضعیت تراکنش‌ها را ندارید");
         return;
       }
 
