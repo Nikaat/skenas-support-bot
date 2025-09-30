@@ -151,10 +151,13 @@ app.post("/api/notify", async (req, res) => {
         String(meta.trackId),
         priority
       );
-    } else if (type === "cashout" && meta?.trackId) {
-      // If cash out and we have trackId, send with inline keyboard
+    } else if (
+      (type === "cashout" || type === "skenas_wallet") &&
+      meta?.trackId
+    ) {
+      // If cash out (or skenas_wallet) and we have trackId, send with inline keyboard
       console.log(
-        `📱 Sending cash out transaction alert for trackId: ${meta.trackId}`
+        `📱 Sending cash out transaction alert for trackId: ${meta.trackId} (type: ${type})`
       );
       sentCount = await telegramBot.sendCashOutTransactionAlertToAllAdmins(
         message,
