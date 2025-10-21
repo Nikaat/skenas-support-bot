@@ -97,7 +97,6 @@ export class MarketsService {
   private async fetchAssetData(assetType: string): Promise<MarketAsset[]> {
     try {
       const url = `${this.apiBaseUrl}/api/telegram-bot/markets/${assetType}`;
-      console.log(`🔗 Fetching ${assetType} from: ${url}`);
 
       const response = await axios.get(url, {
         headers: {

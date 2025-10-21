@@ -233,11 +233,8 @@ async function startApplication(): Promise<void> {
     });
 
     // Start Telegram bots
-    console.log("🤖 Starting Telegram bots...");
     // await telegramSupportBot.start();
-    console.log("📈 Starting markets bot...");
     await telegramMarketsBot.start();
-    console.log("✅ All bots started successfully");
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {

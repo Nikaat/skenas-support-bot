@@ -10,17 +10,9 @@ export class TelegramMarketsBot {
   private intervalCounter: number = 0;
 
   constructor() {
-    console.log("🔧 Initializing markets bot...");
-    console.log("🔑 Bot token exists:", !!config.telegram.marketsBotToken);
-    console.log(
-      "🔑 Bot token length:",
-      config.telegram.marketsBotToken?.length || 0
-    );
-
     this.bot = new Telegraf(config.telegram.marketsBotToken);
     this.setupCommands();
     this.setupErrorHandling();
-    console.log("✅ Markets bot initialized successfully");
   }
 
   private setupCommands(): void {
@@ -62,8 +54,6 @@ export class TelegramMarketsBot {
             "You will start receiving market data shortly!",
           { parse_mode: "HTML" }
         );
-
-        console.log(`✅ User ${userId} started markets bot subscription`);
       } catch (error) {
         console.error("Error in start command:", error);
         await ctx.reply("❌ An error occurred. Please try again later.");
@@ -99,8 +89,6 @@ export class TelegramMarketsBot {
             "💡 Use /start to subscribe again if you change your mind.",
           { parse_mode: "HTML" }
         );
-
-        console.log(`❌ User ${userId} unsubscribed from markets bot`);
       } catch (error) {
         console.error("Error in logout command:", error);
         await ctx.reply("❌ An error occurred. Please try again later.");
@@ -128,10 +116,7 @@ export class TelegramMarketsBot {
   }
 
   public async start(): Promise<void> {
-    console.log("🚀 Attempting to start markets bot...");
-
     if (this.isRunning) {
-      console.log("Markets bot is already running");
       return;
     }
 
@@ -144,23 +129,11 @@ export class TelegramMarketsBot {
       ];
 
       await this.bot.telegram.setMyCommands(botCommands);
-      console.log("📡 Starting Telegram bot...");
-
-      // Start the bot in polling mode (non-blocking)
       this.bot.launch();
-      console.log("📡 Telegram bot started successfully");
-
       this.isRunning = true;
-      console.log("✅ Markets bot started successfully");
 
       // Start the scheduled market data fetching
-      console.log("⏰ Starting market data scheduler...");
-      try {
-        this.startMarketDataScheduler();
-        console.log("✅ Scheduler started successfully");
-      } catch (error) {
-        console.error("❌ Error starting scheduler:", error);
-      }
+      this.startMarketDataScheduler();
     } catch (error) {
       console.error("❌ Failed to start markets bot:", error);
       throw error;
@@ -187,39 +160,22 @@ export class TelegramMarketsBot {
   }
 
   private startMarketDataScheduler(): void {
-    console.log("🔄 Starting market data scheduler...");
-
     // Fetch data immediately on start
     this.fetchAndSendMarketData();
 
     // Then fetch every 1 minute
     this.intervalId = setInterval(() => {
-      this.intervalCounter++;
-      console.log(
-        `⏰ Interval triggered #${this.intervalCounter} - fetching market data...`
-      );
       this.fetchAndSendMarketData();
     }, 1 * 60 * 1000); // 1 minute in milliseconds
-
-    console.log("✅ Market data scheduler started (1 minute intervals)");
-
-    // Test the interval with a shorter timeout for debugging
-    setTimeout(() => {
-      console.log("🧪 Testing interval after 10 seconds...");
-      this.fetchAndSendMarketData();
-    }, 10000); // 10 seconds
   }
 
   private async fetchAndSendMarketData(): Promise<void> {
     try {
-      console.log("📊 Fetching market data...");
       const marketData = await marketsService.fetchMarketData();
 
       if (marketData) {
         const subscribedUsers =
           await userSessionService.getAllSubscribedUsers();
-
-        console.log(`👥 Found ${subscribedUsers.length} subscribed users`);
 
         if (subscribedUsers.length > 0) {
           const message = this.formatMarketDataMessage(marketData);
@@ -230,12 +186,7 @@ export class TelegramMarketsBot {
           );
 
           await Promise.allSettled(sendPromises);
-          console.log(`📤 Market data sent to ${subscribedUsers.length} users`);
-        } else {
-          console.log("ℹ️ No subscribed users found, skipping message sending");
         }
-      } else {
-        console.log("⚠️ No market data received");
       }
     } catch (error) {
       console.error("❌ Error fetching/sending market data:", error);
@@ -313,7 +264,6 @@ export class TelegramMarketsBot {
         error.message.includes("blocked")
       ) {
         await userSessionService.unsubscribeUser(userId);
-        console.log(`🗑️ Removed blocked user ${userId} from subscriptions`);
       }
     }
   }
