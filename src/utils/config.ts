@@ -4,7 +4,8 @@ dotenv.config();
 
 const {
   ALLOWED_ORIGINS,
-  TELEGRAM_BOT_TOKEN,
+  TELEGRAM_SUPPORT_BOT_TOKEN,
+  TELEGRAM_MARKETS_BOT_TOKEN,
   ADMIN_PHONE_NUMBERS,
   CRYPTO_AUTHORIZED_ADMINS,
   TELEGRAM_BOT_API_KEY,
@@ -17,7 +18,8 @@ const {
 
 export const config = {
   telegram: {
-    botToken: TELEGRAM_BOT_TOKEN || "",
+    supportBotToken: TELEGRAM_SUPPORT_BOT_TOKEN || "",
+    marketsBotToken: TELEGRAM_MARKETS_BOT_TOKEN || "",
   },
   admin: {
     phoneNumbers: ADMIN_PHONE_NUMBERS
@@ -43,8 +45,12 @@ export const config = {
 };
 
 // Validation
-if (!config.telegram.botToken) {
-  throw new Error("TELEGRAM_BOT_TOKEN is required");
+if (!config.telegram.supportBotToken) {
+  throw new Error("TELEGRAM_SUPPORT_BOT_TOKEN is required");
+}
+
+if (!config.telegram.marketsBotToken) {
+  throw new Error("TELEGRAM_MARKETS_BOT_TOKEN is required");
 }
 
 if (config.admin.phoneNumbers.length === 0) {

@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
-import { config } from "./config/config";
-import { telegramBot } from "./bot/telegram-bot";
-import { adminAuthService } from "./services/admin-auth.service";
+import { config } from "./utils/config";
+import { telegramSupportBot } from "./support-bot/bot/telegram-bot";
+import { telegramMarketsBot } from "./markets-bot/bot/telegram-bot";
+import { adminAuthService } from "./support-bot/services/admin-auth.service";
 
 const app = express();
 
@@ -61,10 +62,11 @@ app.post("/api/test-notification", async (req, res) => {
     // Send test notification to all active admin sessions
     const testMessage =
       "🧪 <b>تست سیستم هشدار</b>\n\nاین یک پیام تست برای بررسی عملکرد ربات است.";
-    const sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
-      testMessage,
-      "normal"
-    );
+    const sentCount =
+      await telegramSupportBot.sendFailedTransactionAlertToAllAdmins(
+        testMessage,
+        "normal"
+      );
 
     return res.json({
       success: true,
@@ -146,11 +148,12 @@ app.post("/api/notify", async (req, res) => {
       console.log(
         `📱 Sending crypto transaction alert for trackId: ${meta.trackId}`
       );
-      sentCount = await telegramBot.sendCryptoTransactionAlertToAllAdmins(
-        message,
-        String(meta.trackId),
-        priority
-      );
+      sentCount =
+        await telegramSupportBot.sendCryptoTransactionAlertToAllAdmins(
+          message,
+          String(meta.trackId),
+          priority
+        );
     } else if (
       (type === "cashout" || type === "skenas_wallet") &&
       meta?.trackId
@@ -159,20 +162,22 @@ app.post("/api/notify", async (req, res) => {
       console.log(
         `📱 Sending cash out transaction alert for trackId: ${meta.trackId} (type: ${type})`
       );
-      sentCount = await telegramBot.sendCashOutTransactionAlertToAllAdmins(
-        message,
-        String(meta.trackId),
-        priority
-      );
+      sentCount =
+        await telegramSupportBot.sendCashOutTransactionAlertToAllAdmins(
+          message,
+          String(meta.trackId),
+          priority
+        );
     } else {
       // fallback to plain broadcast
       console.log(
         `📱 Sending failed transaction alert (type: ${type || "generic"})`
       );
-      sentCount = await telegramBot.sendFailedTransactionAlertToAllAdmins(
-        message,
-        priority
-      );
+      sentCount =
+        await telegramSupportBot.sendFailedTransactionAlertToAllAdmins(
+          message,
+          priority
+        );
     }
 
     console.log(`📊 Notification sent to ${sentCount} admin(s)`);
@@ -227,8 +232,9 @@ async function startApplication(): Promise<void> {
       console.log(`✅ Bot started on port ${config.bot.port}`);
     });
 
-    // Start Telegram bot
-    await telegramBot.start();
+    // Start Telegram bots
+    await telegramSupportBot.start();
+    await telegramMarketsBot.start();
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
@@ -236,7 +242,8 @@ async function startApplication(): Promise<void> {
         console.log("✅ Bot closed");
       });
 
-      await telegramBot.stop();
+      await telegramSupportBot.stop();
+      await telegramMarketsBot.stop();
       process.exit(0);
     };
 
