@@ -3,14 +3,18 @@ import { config } from "../../utils/config";
 import { ASSET_TYPES } from "../../enums/markets-bot-enums";
 
 interface MarketAsset {
-  id?: string;
-  name?: string;
-  symbol?: string;
-  price?: number | string;
-  change?: number;
-  changePercent?: number;
-  volume?: number;
-  [key: string]: any;
+  symbol: string;
+  name: string;
+  fullname: string;
+  type: string;
+  cprice: number;
+  unit: string;
+  tradable: boolean;
+  image: string | null;
+  differenceValue: number;
+  percentageDifferenceValue: string;
+  lastUpdate: number;
+  chart?: any[]; // We'll ignore this
 }
 
 interface MarketData {
@@ -103,16 +107,18 @@ export class MarketsService {
       });
 
       if (response.status === 200 && response.data) {
-        // Handle different response formats
-        if (Array.isArray(response.data)) {
-          return response.data;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          return response.data.data;
-        } else if (
-          response.data.assets &&
-          Array.isArray(response.data.assets)
+        // Handle the API response format: { status: "DONE", result: { data: [...] } }
+        if (
+          response.data.status === "DONE" &&
+          response.data.result &&
+          response.data.result.data
         ) {
-          return response.data.assets;
+          const assets = response.data.result.data;
+          // Remove chart data since we don't need it
+          return assets.map((asset: any) => {
+            const { chart, ...assetWithoutChart } = asset;
+            return assetWithoutChart;
+          });
         } else {
           console.warn(
             `Unexpected response format for ${assetType}:`,

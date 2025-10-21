@@ -200,9 +200,13 @@ export class TelegramMarketsBot {
     if (marketData.currency && marketData.currency.length > 0) {
       message += "💱 <b>Currency (Top 5):</b>\n";
       marketData.currency.slice(0, 5).forEach((asset: any, index: number) => {
-        message += `${index + 1}. ${asset.name || asset.symbol || "N/A"}: ${
-          asset.price || "N/A"
-        }\n`;
+        const price = asset.cprice
+          ? `${asset.cprice.toLocaleString()} ${asset.unit}`
+          : "N/A";
+        const change = asset.percentageDifferenceValue || "";
+        message += `${index + 1}. ${
+          asset.name || asset.symbol || "N/A"
+        }: ${price} ${change}\n`;
       });
       message += "\n";
     }
@@ -211,9 +215,13 @@ export class TelegramMarketsBot {
     if (marketData.crypto && marketData.crypto.length > 0) {
       message += "₿ <b>Crypto (Top 5):</b>\n";
       marketData.crypto.slice(0, 5).forEach((asset: any, index: number) => {
-        message += `${index + 1}. ${asset.name || asset.symbol || "N/A"}: ${
-          asset.price || "N/A"
-        }\n`;
+        const price = asset.cprice
+          ? `${asset.cprice.toLocaleString()} ${asset.unit}`
+          : "N/A";
+        const change = asset.percentageDifferenceValue || "";
+        message += `${index + 1}. ${
+          asset.name || asset.symbol || "N/A"
+        }: ${price} ${change}\n`;
       });
       message += "\n";
     }
@@ -222,9 +230,13 @@ export class TelegramMarketsBot {
     if (marketData.gold && marketData.gold.length > 0) {
       message += "🥇 <b>Gold (Top 5):</b>\n";
       marketData.gold.slice(0, 5).forEach((asset: any, index: number) => {
-        message += `${index + 1}. ${asset.name || asset.symbol || "N/A"}: ${
-          asset.price || "N/A"
-        }\n`;
+        const price = asset.cprice
+          ? `${asset.cprice.toLocaleString()} ${asset.unit}`
+          : "N/A";
+        const change = asset.percentageDifferenceValue || "";
+        message += `${index + 1}. ${
+          asset.name || asset.symbol || "N/A"
+        }: ${price} ${change}\n`;
       });
     }
 
