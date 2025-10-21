@@ -1,17 +1,26 @@
 import { Telegraf, Context } from "telegraf";
 import { config } from "../../utils/config";
-import { marketsService } from "../../markets-bot/services/markets.service";
+import { marketsService } from "../services/markets.service";
+import { userSessionService } from "../services/user-session.service";
 
 export class TelegramMarketsBot {
   private bot: Telegraf<Context>;
   private isRunning: boolean = false;
   private intervalId: NodeJS.Timeout | null = null;
-  private subscribedUsers: Set<number> = new Set();
+  private intervalCounter: number = 0;
 
   constructor() {
+    console.log("🔧 Initializing markets bot...");
+    console.log("🔑 Bot token exists:", !!config.telegram.marketsBotToken);
+    console.log(
+      "🔑 Bot token length:",
+      config.telegram.marketsBotToken?.length || 0
+    );
+
     this.bot = new Telegraf(config.telegram.marketsBotToken);
     this.setupCommands();
     this.setupErrorHandling();
+    console.log("✅ Markets bot initialized successfully");
   }
 
   private setupCommands(): void {
@@ -26,7 +35,7 @@ export class TelegramMarketsBot {
         }
 
         // Check if user is already subscribed
-        if (this.isUserSubscribed(userId)) {
+        if (await userSessionService.isUserSubscribed(userId)) {
           await ctx.reply(
             "✅ <b>You are already subscribed!</b>\n\n" +
               "You will continue to receive market updates every 5 minutes.\n\n" +
@@ -37,7 +46,7 @@ export class TelegramMarketsBot {
         }
 
         // Subscribe the user
-        this.subscribeUser(userId);
+        await userSessionService.subscribeUser(userId);
 
         await ctx.reply(
           "🎉 <b>Welcome to Markets Bot!</b>\n\n" +
@@ -72,7 +81,7 @@ export class TelegramMarketsBot {
         }
 
         // Check if user is subscribed
-        if (!this.isUserSubscribed(userId)) {
+        if (!(await userSessionService.isUserSubscribed(userId))) {
           await ctx.reply(
             "ℹ️ <b>You are not currently subscribed</b>\n\n" +
               "Use /start to begin receiving market updates.",
@@ -82,7 +91,7 @@ export class TelegramMarketsBot {
         }
 
         // Unsubscribe the user
-        this.unsubscribeUser(userId);
+        await userSessionService.unsubscribeUser(userId);
 
         await ctx.reply(
           "👋 <b>You have been unsubscribed</b>\n\n" +
@@ -119,18 +128,39 @@ export class TelegramMarketsBot {
   }
 
   public async start(): Promise<void> {
+    console.log("🚀 Attempting to start markets bot...");
+
     if (this.isRunning) {
       console.log("Markets bot is already running");
       return;
     }
 
     try {
-      await this.bot.launch();
+      // Set bot commands
+      const botCommands = [
+        { command: "start", description: "Subscribe to market updates" },
+        { command: "logout", description: "Unsubscribe from market updates" },
+        { command: "help", description: "Show help message" },
+      ];
+
+      await this.bot.telegram.setMyCommands(botCommands);
+      console.log("📡 Starting Telegram bot...");
+
+      // Start the bot in polling mode (non-blocking)
+      this.bot.launch();
+      console.log("📡 Telegram bot started successfully");
+
       this.isRunning = true;
       console.log("✅ Markets bot started successfully");
 
       // Start the scheduled market data fetching
-      this.startMarketDataScheduler();
+      console.log("⏰ Starting market data scheduler...");
+      try {
+        this.startMarketDataScheduler();
+        console.log("✅ Scheduler started successfully");
+      } catch (error) {
+        console.error("❌ Error starting scheduler:", error);
+      }
     } catch (error) {
       console.error("❌ Failed to start markets bot:", error);
       throw error;
@@ -157,13 +187,27 @@ export class TelegramMarketsBot {
   }
 
   private startMarketDataScheduler(): void {
+    console.log("🔄 Starting market data scheduler...");
+
     // Fetch data immediately on start
     this.fetchAndSendMarketData();
 
-    // Then fetch every 5 minutes
+    // Then fetch every 1 minute
     this.intervalId = setInterval(() => {
+      this.intervalCounter++;
+      console.log(
+        `⏰ Interval triggered #${this.intervalCounter} - fetching market data...`
+      );
       this.fetchAndSendMarketData();
-    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+    }, 1 * 60 * 1000); // 1 minute in milliseconds
+
+    console.log("✅ Market data scheduler started (1 minute intervals)");
+
+    // Test the interval with a shorter timeout for debugging
+    setTimeout(() => {
+      console.log("🧪 Testing interval after 10 seconds...");
+      this.fetchAndSendMarketData();
+    }, 10000); // 10 seconds
   }
 
   private async fetchAndSendMarketData(): Promise<void> {
@@ -171,18 +215,27 @@ export class TelegramMarketsBot {
       console.log("📊 Fetching market data...");
       const marketData = await marketsService.fetchMarketData();
 
-      if (marketData && this.subscribedUsers.size > 0) {
-        const message = this.formatMarketDataMessage(marketData);
+      if (marketData) {
+        const subscribedUsers =
+          await userSessionService.getAllSubscribedUsers();
 
-        // Send to all subscribed users
-        const sendPromises = Array.from(this.subscribedUsers).map((userId) =>
-          this.sendMessageToUser(userId, message)
-        );
+        console.log(`👥 Found ${subscribedUsers.length} subscribed users`);
 
-        await Promise.allSettled(sendPromises);
-        console.log(
-          `📤 Market data sent to ${this.subscribedUsers.size} users`
-        );
+        if (subscribedUsers.length > 0) {
+          const message = this.formatMarketDataMessage(marketData);
+
+          // Send to all subscribed users
+          const sendPromises = subscribedUsers.map((userId) =>
+            this.sendMessageToUser(userId, message)
+          );
+
+          await Promise.allSettled(sendPromises);
+          console.log(`📤 Market data sent to ${subscribedUsers.length} users`);
+        } else {
+          console.log("ℹ️ No subscribed users found, skipping message sending");
+        }
+      } else {
+        console.log("⚠️ No market data received");
       }
     } catch (error) {
       console.error("❌ Error fetching/sending market data:", error);
@@ -259,28 +312,10 @@ export class TelegramMarketsBot {
         error.message &&
         error.message.includes("blocked")
       ) {
-        this.subscribedUsers.delete(userId);
+        await userSessionService.unsubscribeUser(userId);
         console.log(`🗑️ Removed blocked user ${userId} from subscriptions`);
       }
     }
-  }
-
-  public subscribeUser(userId: number): void {
-    this.subscribedUsers.add(userId);
-    console.log(`✅ User ${userId} subscribed to market updates`);
-  }
-
-  public unsubscribeUser(userId: number): void {
-    this.subscribedUsers.delete(userId);
-    console.log(`❌ User ${userId} unsubscribed from market updates`);
-  }
-
-  public isUserSubscribed(userId: number): boolean {
-    return this.subscribedUsers.has(userId);
-  }
-
-  public getSubscribedUsersCount(): number {
-    return this.subscribedUsers.size;
   }
 }
 

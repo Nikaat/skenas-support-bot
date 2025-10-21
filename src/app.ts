@@ -233,8 +233,11 @@ async function startApplication(): Promise<void> {
     });
 
     // Start Telegram bots
-    await telegramSupportBot.start();
+    console.log("🤖 Starting Telegram bots...");
+    // await telegramSupportBot.start();
+    console.log("📈 Starting markets bot...");
     await telegramMarketsBot.start();
+    console.log("✅ All bots started successfully");
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
@@ -242,7 +245,7 @@ async function startApplication(): Promise<void> {
         console.log("✅ Bot closed");
       });
 
-      await telegramSupportBot.stop();
+      // await telegramSupportBot.stop();
       await telegramMarketsBot.stop();
       process.exit(0);
     };

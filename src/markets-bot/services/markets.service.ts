@@ -96,14 +96,15 @@ export class MarketsService {
 
   private async fetchAssetData(assetType: string): Promise<MarketAsset[]> {
     try {
-      const url = `${this.apiBaseUrl}/api/telegtam-bot/markets/${assetType}`;
+      const url = `${this.apiBaseUrl}/api/telegram-bot/markets/${assetType}`;
+      console.log(`🔗 Fetching ${assetType} from: ${url}`);
 
       const response = await axios.get(url, {
         headers: {
           authorization: `Bearer ${this.apiKey}`,
           "Content-Type": "application/json",
         },
-        timeout: 10000, // 10 second timeout
+        timeout: 30000, // 30 second timeout
       });
 
       if (response.status === 200 && response.data) {
