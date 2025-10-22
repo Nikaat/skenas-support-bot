@@ -210,7 +210,7 @@ export class TelegramMarketsBot {
           ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `‏${flag} ${name}: ${price} ${change}\n`;
+        message += `‏${flag} ${name}: ${price}\n`;
       });
       message += "\n";
     }
@@ -225,7 +225,7 @@ export class TelegramMarketsBot {
           ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `‏ ${name}: ${price} ${change}\n`;
+        message += `‏ ${name}: ${price}\n`;
       });
       message += "\n";
     }
@@ -248,7 +248,7 @@ export class TelegramMarketsBot {
             }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
           : name;
 
-        message += ` ${displayName}: ${price} ${change}\n`;
+        message += ` ${displayName}: ${price}\n`;
       });
     }
 
@@ -272,37 +272,6 @@ export class TelegramMarketsBot {
     };
     return flags[symbol] || "🏳️";
   }
-
-  //   private getGoldEmoji(symbol: string): string {
-  //     const emojis: { [key: string]: string } = {
-  //       GERAMI18: "💎",
-  //       GERAMI24: "💎",
-  //       SEKEE_EMAMI: "💎",
-  //       NIM: "💎",
-  //       ROB: "💎",
-  //       GERAMI: "💎",
-  //       ONS: "🟡",
-  //     };
-  //     return emojis[symbol] || "💎";
-  //   }
-
-  //   private getCryptoEmoji(symbol: string): string {
-  //     const emojis: { [key: string]: string } = {
-  //       BTC: "🤑",
-  //       ETH: "🤑",
-  //       USDT: "🤑",
-  //       DOGE: "🤑",
-  //       BNB: "🤑",
-  //       SOL: "🤑",
-  //       TRX: "🤑",
-  //       XRP: "🤑",
-  //       SHIB: "🤑",
-  //       DOT: "🤑",
-  //       LTC: "🟡",
-  //       CAKE: "🟡",
-  //     };
-  //     return emojis[symbol] || "🟡";
-  //   }
 
   private formatPrice(value: string | number): string {
     if (value === null || value === undefined || value === "") return "";
