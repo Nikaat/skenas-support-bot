@@ -6,6 +6,7 @@ const {
   ALLOWED_ORIGINS,
   TELEGRAM_SUPPORT_BOT_TOKEN,
   TELEGRAM_MARKETS_BOT_TOKEN,
+  TELEGRAM_MARKETS_CHANNEL_ID,
   ADMIN_PHONE_NUMBERS,
   CRYPTO_AUTHORIZED_ADMINS,
   TELEGRAM_BOT_API_KEY,
@@ -20,6 +21,7 @@ export const config = {
   telegram: {
     supportBotToken: TELEGRAM_SUPPORT_BOT_TOKEN || "",
     marketsBotToken: TELEGRAM_MARKETS_BOT_TOKEN || "",
+    marketsChannelId: TELEGRAM_MARKETS_CHANNEL_ID || "",
   },
   admin: {
     phoneNumbers: ADMIN_PHONE_NUMBERS
@@ -51,6 +53,10 @@ if (!config.telegram.supportBotToken) {
 
 if (!config.telegram.marketsBotToken) {
   throw new Error("TELEGRAM_MARKETS_BOT_TOKEN is required");
+}
+
+if (!config.telegram.marketsChannelId) {
+  throw new Error("TELEGRAM_MARKETS_CHANNEL_ID is required");
 }
 
 if (config.admin.phoneNumbers.length === 0) {
