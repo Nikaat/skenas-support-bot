@@ -159,7 +159,7 @@ export class TelegramMarketsBot {
       const minute = now.getMinutes();
 
       // Check if it's one of the scheduled times (9 AM, 3 PM, 9 PM)
-      const scheduledTimes = [9, 15, 21]; // 9 AM, 3 PM, 9 PM
+      const scheduledTimes = [9, 15, 18]; // 9 AM, 3 PM, 6 PM
       const isScheduledTime = scheduledTimes.includes(hour) && minute === 0;
 
       // Also check if we haven't sent to this channel in the last hour
