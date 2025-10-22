@@ -255,8 +255,7 @@ export class TelegramMarketsBot {
 
     // Add footer link
     message += "\n\n";
-    message += `<a href="${config.skenas.baseUrl}">💰 خرید و فروش امن و مطمئن با اسکناس</a>`;
-    message += `\n@skenas.io`;
+    message += `<a href="${config.skenas.baseUrl}">💰 خرید و فروش امن و مطمئن با اسکناس</a> \n\n@skenas.io`;
 
     return message;
   }
