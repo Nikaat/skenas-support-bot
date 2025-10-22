@@ -194,6 +194,7 @@ export class TelegramMarketsBot {
     const persianTime = now.toLocaleTimeString("fa-IR", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Tehran",
     });
 
     let message = "🌐 <b>به‌روزرسانی لحظه‌ای بازارها</b>\n";
