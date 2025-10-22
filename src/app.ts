@@ -233,7 +233,7 @@ async function startApplication(): Promise<void> {
     });
 
     // Start Telegram bots
-    // await telegramSupportBot.start();
+    await telegramSupportBot.start();
     await telegramMarketsBot.start();
 
     // Graceful shutdown
@@ -242,7 +242,7 @@ async function startApplication(): Promise<void> {
         console.log("✅ Bot closed");
       });
 
-      // await telegramSupportBot.stop();
+      await telegramSupportBot.stop();
       await telegramMarketsBot.stop();
       process.exit(0);
     };
