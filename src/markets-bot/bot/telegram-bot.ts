@@ -154,12 +154,16 @@ export class TelegramMarketsBot {
 
   private async checkAndSendToOfficialChannel(): Promise<void> {
     try {
+      // Get current time in Iran timezone
       const now = new Date();
-      const hour = now.getHours();
-      const minute = now.getMinutes();
+      const iranTime = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+      );
+      const hour = iranTime.getHours();
+      const minute = iranTime.getMinutes();
 
-      // Check if it's one of the scheduled times (9 AM, 3 PM, 9 PM)
-      const scheduledTimes = [9, 15, 19]; // 9 AM, 3 PM, 6 PM
+      // Check if it's one of the scheduled times (9 AM, 3 PM, 9 PM) in Iran time
+      const scheduledTimes = [9, 15, 21]; // 9 AM, 3 PM, 9 PM Iran time
       const isScheduledTime = scheduledTimes.includes(hour) && minute === 0;
 
       // Also check if we haven't sent to this channel in the last hour
@@ -174,7 +178,9 @@ export class TelegramMarketsBot {
           const message = this.formatMarketDataMessage(marketData);
           await this.sendMessageToChannel(this.officialChannelId, message);
           this.lastOfficialSent = now;
-          console.log(`✅ Market data sent to official channel at ${hour}:00`);
+          console.log(
+            `✅ Market data sent to official channel at ${hour}:00 Iran time`
+          );
         }
       }
     } catch (error) {
