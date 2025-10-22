@@ -232,18 +232,58 @@ async function startApplication(): Promise<void> {
       console.log(`✅ Bot started on port ${config.bot.port}`);
     });
 
-    // Start Telegram bots
-    await telegramSupportBot.start();
-    await telegramMarketsBot.start();
+    // Start Telegram bots in parallel
+    console.log("🚀 Starting both bots...");
+
+    const startBots = async () => {
+      const botPromises = [
+        telegramSupportBot
+          .start()
+          .then(() => {
+            console.log("✅ Support Bot started successfully");
+          })
+          .catch((error) => {
+            console.error("❌ Failed to start Support Bot:", error);
+          }),
+
+        telegramMarketsBot
+          .start()
+          .then(() => {
+            console.log("✅ Markets Bot started successfully");
+          })
+          .catch((error) => {
+            console.error("❌ Failed to start Markets Bot:", error);
+          }),
+      ];
+
+      await Promise.allSettled(botPromises);
+      console.log("🎉 Bot startup process completed");
+    };
+
+    await startBots();
 
     // Graceful shutdown
     const gracefulShutdown = async (signal: string) => {
+      console.log(`🛑 Received ${signal}, shutting down gracefully...`);
+
       server.close(() => {
-        console.log("✅ Bot closed");
+        console.log("✅ HTTP server closed");
       });
 
-      await telegramSupportBot.stop();
-      await telegramMarketsBot.stop();
+      try {
+        await telegramSupportBot.stop();
+        console.log("✅ Support Bot stopped");
+      } catch (error) {
+        console.error("❌ Error stopping Support Bot:", error);
+      }
+
+      try {
+        await telegramMarketsBot.stop();
+        console.log("✅ Markets Bot stopped");
+      } catch (error) {
+        console.error("❌ Error stopping Markets Bot:", error);
+      }
+
       process.exit(0);
     };
 

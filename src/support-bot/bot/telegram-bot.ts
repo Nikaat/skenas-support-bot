@@ -881,9 +881,7 @@ export class TelegramSupportBot {
 
       await this.bot.telegram.setMyCommands(botCommands);
       await this.bot.launch();
-
-      process.once("SIGINT", () => this.stop());
-      process.once("SIGTERM", () => this.stop());
+      console.log("✅ Support Bot launched successfully");
     } catch (error) {
       console.error("❌ Failed to start Telegram bot:", error);
       throw error;
