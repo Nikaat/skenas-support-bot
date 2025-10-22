@@ -27,6 +27,34 @@ export class MarketsService {
   private readonly apiBaseUrl: string;
   private readonly apiKey: string;
 
+  // Specific symbols to fetch for each asset type
+  private readonly targetSymbols = {
+    currency: ["USD", "EUR", "GBP", "AED", "TRY", "CNY", "RUB", "IQD"],
+    crypto: [
+      "BTC",
+      "ETH",
+      "USDT",
+      "DOGE",
+      "BNB",
+      "SOL",
+      "TRX",
+      "XRP",
+      "SHIB",
+      "DOT",
+      "LTC",
+      "CAKE",
+    ],
+    gold: [
+      "GERAMI18",
+      "GERAMI24",
+      "SEKEE_EMAMI",
+      "NIM",
+      "ROB",
+      "GERAMI",
+      "ONS",
+    ],
+  };
+
   constructor() {
     this.apiBaseUrl = config.skenas.apiBaseUrl;
     this.apiKey = config.bot.apiKey;
@@ -63,18 +91,30 @@ export class MarketsService {
         if (result.status === "fulfilled") {
           const { assetType, data } = result.value;
           if (Array.isArray(data) && data.length > 0) {
-            // Take first 5 assets and assign to appropriate category
-            const top5Assets = data.slice(0, 5);
+            // Filter for specific symbols based on asset type
+            let filteredAssets: MarketAsset[] = [];
 
             switch (assetType) {
               case ASSET_TYPES.CURRENCY:
-                marketData.currency = top5Assets;
+                filteredAssets = this.filterAssetsBySymbols(
+                  data,
+                  this.targetSymbols.currency
+                );
+                marketData.currency = filteredAssets;
                 break;
               case ASSET_TYPES.CRYPTO:
-                marketData.crypto = top5Assets;
+                filteredAssets = this.filterAssetsBySymbols(
+                  data,
+                  this.targetSymbols.crypto
+                );
+                marketData.crypto = filteredAssets;
                 break;
               case ASSET_TYPES.GOLD:
-                marketData.gold = top5Assets;
+                filteredAssets = this.filterAssetsBySymbols(
+                  data,
+                  this.targetSymbols.gold
+                );
+                marketData.gold = filteredAssets;
                 break;
             }
           }
@@ -148,6 +188,20 @@ export class MarketsService {
       }
       return [];
     }
+  }
+
+  private filterAssetsBySymbols(
+    assets: MarketAsset[],
+    targetSymbols: string[]
+  ): MarketAsset[] {
+    return assets
+      .filter((asset) => targetSymbols.includes(asset.symbol))
+      .sort((a, b) => {
+        // Sort by the order of symbols in targetSymbols array
+        const indexA = targetSymbols.indexOf(a.symbol);
+        const indexB = targetSymbols.indexOf(b.symbol);
+        return indexA - indexB;
+      });
   }
 
   public async testConnection(): Promise<boolean> {
