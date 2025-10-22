@@ -204,9 +204,9 @@ export class TelegramMarketsBot {
       message += "💵 <b>ارز</b>\n\n";
       marketData.currency.forEach((asset: any) => {
         const flag = this.getCurrencyFlag(asset.symbol);
-        const name = this.getCurrencyPersianName(asset.symbol);
+        const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
-          ? `${asset.cprice.toLocaleString("fa-IR")} تومان`
+          ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `${flag} ${name}: ${price} ${change}\n`;
@@ -219,9 +219,9 @@ export class TelegramMarketsBot {
       message += "💰 <b>طلا</b>\n\n";
       marketData.gold.forEach((asset: any) => {
         const emoji = this.getGoldEmoji(asset.symbol);
-        const name = this.getGoldPersianName(asset.symbol);
+        const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
-          ? `${asset.cprice.toLocaleString("fa-IR")} ${asset.unit}`
+          ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `${emoji} ${name}: ${price} ${change}\n`;
@@ -234,12 +234,20 @@ export class TelegramMarketsBot {
       message += "💸 <b>ارز دیجیتال</b>\n\n";
       marketData.crypto.forEach((asset: any) => {
         const emoji = this.getCryptoEmoji(asset.symbol);
-        const name = this.getCryptoPersianName(asset.symbol);
+        const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
-          ? `${asset.cprice.toLocaleString("fa-IR")} ${asset.unit}`
+          ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `${emoji} ${name}: ${price} ${change}\n`;
+
+        // Make name a link if tradable
+        const displayName = asset.tradable
+          ? `<a href="${
+              config.skenas.baseUrl
+            }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
+          : name;
+
+        message += `${emoji} ${displayName}: ${price} ${change}\n`;
       });
     }
 
@@ -260,20 +268,6 @@ export class TelegramMarketsBot {
     return flags[symbol] || "🏳️";
   }
 
-  private getCurrencyPersianName(symbol: string): string {
-    const names: { [key: string]: string } = {
-      USD: "دلار آمریکا",
-      EUR: "یورو",
-      GBP: "پوند انگلیس",
-      AED: "درهم امارات",
-      TRY: "لیر ترکیه",
-      CNY: "یوان چین",
-      RUB: "روبل روسیه",
-      IQD: "صد دینار عراق",
-    };
-    return names[symbol] || symbol;
-  }
-
   private getGoldEmoji(symbol: string): string {
     const emojis: { [key: string]: string } = {
       GERAMI18: "💎",
@@ -285,19 +279,6 @@ export class TelegramMarketsBot {
       ONS: "🟡",
     };
     return emojis[symbol] || "💎";
-  }
-
-  private getGoldPersianName(symbol: string): string {
-    const names: { [key: string]: string } = {
-      GERAMI18: "گرم طلای ۱۸عیار",
-      GERAMI24: "گرم طلای ۲۴عیار",
-      SEKEE_EMAMI: "سکه امامی",
-      NIM: "نیم سکه",
-      ROB: "ربع سکه",
-      GERAMI: "سکه گرمی",
-      ONS: "انس طلا",
-    };
-    return names[symbol] || symbol;
   }
 
   private getCryptoEmoji(symbol: string): string {
@@ -318,22 +299,24 @@ export class TelegramMarketsBot {
     return emojis[symbol] || "🟡";
   }
 
-  private getCryptoPersianName(symbol: string): string {
-    const names: { [key: string]: string } = {
-      BTC: "بیتکوین",
-      ETH: "اتریوم",
-      USDT: "تتر",
-      DOGE: "دوج کوین",
-      BNB: "بایننس کوین",
-      SOL: "سولانا",
-      TRX: "ترون",
-      XRP: "ریپل",
-      SHIB: "شیبا اینو",
-      DOT: "دات",
-      LTC: "لایت‌کوین",
-      CAKE: "پنکیک سوآپ",
-    };
-    return names[symbol] || symbol;
+  private formatPrice(value: string | number): string {
+    if (value === null || value === undefined || value === "") return "";
+
+    const stringValue = value.toString();
+    const parts = stringValue.split(".");
+
+    // Format integer part with thousand separators
+    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+    // Return with decimal part if exists, otherwise just integer part
+    return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+  }
+
+  private formatUnit(unit: string): string {
+    if (unit === "IRR") {
+      return "تومان";
+    }
+    return unit;
   }
 
   private formatChange(change: string): string {
@@ -346,8 +329,9 @@ export class TelegramMarketsBot {
     const value = parseFloat(match[1]);
     const isPositive = value >= 0;
     const direction = isPositive ? "🔺" : "🔻";
+    const sign = isPositive ? "+" : "-";
 
-    return `(${Math.abs(value).toFixed(1)}%${direction})`;
+    return `(${sign}${Math.abs(value).toFixed(1)}%${direction})`;
   }
 
   private async sendMessageToChannel(

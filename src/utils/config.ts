@@ -16,6 +16,7 @@ const {
   REDIS_PORT,
   REDIS_PASSWORD,
   SKENAS_API_BASE_URL,
+  SKENAS_BASE_URL,
 } = process.env;
 
 export const config = {
@@ -44,6 +45,7 @@ export const config = {
   },
   skenas: {
     apiBaseUrl: SKENAS_API_BASE_URL || "",
+    baseUrl: SKENAS_BASE_URL || "",
   },
   allowedOrigins: ALLOWED_ORIGINS || "",
 };
@@ -69,6 +71,10 @@ if (config.admin.phoneNumbers.length === 0) {
   throw new Error(
     "ADMIN_PHONE_NUMBERS is required and must contain at least one phone number"
   );
+}
+
+if (!config.skenas.baseUrl) {
+  throw new Error("SKENAS_BASE_URL is required");
 }
 
 if (config.admin.cryptoAuthorizedAdmins.length === 0) {
