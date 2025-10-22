@@ -219,13 +219,13 @@ export class TelegramMarketsBot {
     if (marketData.gold && marketData.gold.length > 0) {
       message += "💰 <b>طلا</b>\n\n";
       marketData.gold.forEach((asset: any) => {
-        const emoji = this.getGoldEmoji(asset.symbol);
+        // const emoji = this.getGoldEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
           ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `‏${emoji} ${name}: ${price} ${change}\n`;
+        message += `‏ ${name}: ${price} ${change}\n`;
       });
       message += "\n";
     }
@@ -234,7 +234,7 @@ export class TelegramMarketsBot {
     if (marketData.crypto && marketData.crypto.length > 0) {
       message += "💸 <b>ارز دیجیتال</b>\n\n";
       marketData.crypto.forEach((asset: any) => {
-        const emoji = this.getCryptoEmoji(asset.symbol);
+        // const emoji = this.getCryptoEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
           ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
@@ -248,7 +248,7 @@ export class TelegramMarketsBot {
             }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
           : name;
 
-        message += `${emoji} ${displayName}: ${price} ${change}\n`;
+        message += ` ${displayName}: ${price} ${change}\n`;
       });
     }
 
@@ -273,36 +273,36 @@ export class TelegramMarketsBot {
     return flags[symbol] || "🏳️";
   }
 
-  private getGoldEmoji(symbol: string): string {
-    const emojis: { [key: string]: string } = {
-      GERAMI18: "💎",
-      GERAMI24: "💎",
-      SEKEE_EMAMI: "💎",
-      NIM: "💎",
-      ROB: "💎",
-      GERAMI: "💎",
-      ONS: "🟡",
-    };
-    return emojis[symbol] || "💎";
-  }
+  //   private getGoldEmoji(symbol: string): string {
+  //     const emojis: { [key: string]: string } = {
+  //       GERAMI18: "💎",
+  //       GERAMI24: "💎",
+  //       SEKEE_EMAMI: "💎",
+  //       NIM: "💎",
+  //       ROB: "💎",
+  //       GERAMI: "💎",
+  //       ONS: "🟡",
+  //     };
+  //     return emojis[symbol] || "💎";
+  //   }
 
-  private getCryptoEmoji(symbol: string): string {
-    const emojis: { [key: string]: string } = {
-      BTC: "🤑",
-      ETH: "🤑",
-      USDT: "🤑",
-      DOGE: "🤑",
-      BNB: "🤑",
-      SOL: "🤑",
-      TRX: "🤑",
-      XRP: "🤑",
-      SHIB: "🤑",
-      DOT: "🤑",
-      LTC: "🟡",
-      CAKE: "🟡",
-    };
-    return emojis[symbol] || "🟡";
-  }
+  //   private getCryptoEmoji(symbol: string): string {
+  //     const emojis: { [key: string]: string } = {
+  //       BTC: "🤑",
+  //       ETH: "🤑",
+  //       USDT: "🤑",
+  //       DOGE: "🤑",
+  //       BNB: "🤑",
+  //       SOL: "🤑",
+  //       TRX: "🤑",
+  //       XRP: "🤑",
+  //       SHIB: "🤑",
+  //       DOT: "🤑",
+  //       LTC: "🟡",
+  //       CAKE: "🟡",
+  //     };
+  //     return emojis[symbol] || "🟡";
+  //   }
 
   private formatPrice(value: string | number): string {
     if (value === null || value === undefined || value === "") return "";
@@ -321,7 +321,7 @@ export class TelegramMarketsBot {
     if (unit === "IRR") {
       return "تومان";
     } else if (unit == "USD") {
-      return "$";
+      return "دلار";
     }
     return unit;
   }
