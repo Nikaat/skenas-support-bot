@@ -198,6 +198,7 @@ export class TelegramMarketsBot {
 
     let message = "🌐 <b>به‌روزرسانی لحظه‌ای بازارها</b>\n";
     message += `📅 ${persianDate} | ⏰ ${persianTime}\n\n`;
+    message += "‏"; // RTL mark to ensure proper right-to-left alignment
 
     // Currency data with flags
     if (marketData.currency && marketData.currency.length > 0) {
@@ -209,7 +210,7 @@ export class TelegramMarketsBot {
           ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `${flag} ${name}: ${price} ${change}\n`;
+        message += `‏${flag} ${name}: ${price} ${change}\n`;
       });
       message += "\n";
     }
@@ -224,7 +225,7 @@ export class TelegramMarketsBot {
           ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `${emoji} ${name}: ${price} ${change}\n`;
+        message += `‏${emoji} ${name}: ${price} ${change}\n`;
       });
       message += "\n";
     }
@@ -250,6 +251,10 @@ export class TelegramMarketsBot {
         message += `${emoji} ${displayName}: ${price} ${change}\n`;
       });
     }
+
+    // Add footer link
+    message += "\n\n";
+    message += `<a href="${config.skenas.baseUrl}">💰 خرید و فروش امن و مطمئن با اسکناس</a>`;
 
     return message;
   }
@@ -315,6 +320,8 @@ export class TelegramMarketsBot {
   private formatUnit(unit: string): string {
     if (unit === "IRR") {
       return "تومان";
+    } else if (unit == "USD") {
+      return "$";
     }
     return unit;
   }
@@ -331,7 +338,7 @@ export class TelegramMarketsBot {
     const direction = isPositive ? "🔺" : "🔻";
     const sign = isPositive ? "+" : "-";
 
-    return `(${sign}${Math.abs(value).toFixed(1)}%${direction})`;
+    return `(${Math.abs(value).toFixed(1)}${sign}%${direction})`;
   }
 
   private async sendMessageToChannel(
