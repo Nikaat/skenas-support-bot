@@ -1,6 +1,7 @@
 import { Telegraf, Context } from "telegraf";
 import { config } from "../../utils/config";
 import { marketsService } from "../services/markets.service";
+import redis from "../../utils/redis";
 
 export class TelegramMarketsBot {
   private bot: Telegraf<Context>;
@@ -11,7 +12,6 @@ export class TelegramMarketsBot {
   // Schedulers
   private marketsIntervalId: NodeJS.Timeout | null = null;
   private officialIntervalId: NodeJS.Timeout | null = null;
-  private lastOfficialSent: Date | null = null;
 
   constructor() {
     this.bot = new Telegraf(config.telegram.marketsBotToken);
@@ -60,6 +60,24 @@ export class TelegramMarketsBot {
       console.error("Markets bot error:", err);
       ctx.reply("❌ An error occurred. Please try again later.");
     });
+  }
+
+  private async getLastOfficialSent(): Promise<Date | null> {
+    try {
+      const timestamp = await redis.get("lastOfficialSent");
+      return timestamp ? new Date(parseInt(timestamp)) : null;
+    } catch (error) {
+      console.error("❌ Error getting lastOfficialSent from Redis:", error);
+      return null;
+    }
+  }
+
+  private async setLastOfficialSent(date: Date): Promise<void> {
+    try {
+      await redis.set("lastOfficialSent", date.getTime().toString());
+    } catch (error) {
+      console.error("❌ Error setting lastOfficialSent in Redis:", error);
+    }
   }
 
   public async start(): Promise<void> {
@@ -166,18 +184,21 @@ export class TelegramMarketsBot {
       const scheduledTimes = [9, 15, 21]; // 9 AM, 3 PM, 9 PM Iran time
       const isScheduledTime = scheduledTimes.includes(hour) && minute === 0;
 
+      // Get last sent time from Redis
+      const lastOfficialSent = await this.getLastOfficialSent();
+
       // Also check if we haven't sent to this channel in the last hour
       const shouldSend =
         isScheduledTime &&
-        (!this.lastOfficialSent ||
-          now.getTime() - this.lastOfficialSent.getTime() > 60 * 60 * 1000);
+        (!lastOfficialSent ||
+          now.getTime() - lastOfficialSent.getTime() > 60 * 60 * 1000);
 
       if (shouldSend) {
         const marketData = await marketsService.fetchMarketData();
         if (marketData) {
           const message = this.formatMarketDataMessage(marketData);
           await this.sendMessageToChannel(this.officialChannelId, message);
-          this.lastOfficialSent = now;
+          await this.setLastOfficialSent(now);
           console.log(
             `✅ Market data sent to official channel at ${hour}:00 Iran time`
           );
