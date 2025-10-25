@@ -249,8 +249,10 @@ export class TelegramMarketsBot {
       marketData.gold.forEach((asset: any) => {
         // const emoji = this.getGoldEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
-        const price = asset.cprice
-          ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
+        const price = asset.cprice.toFixed(2)
+          ? `${this.formatPrice(asset.cprice.toFixed(2))} ${this.formatUnit(
+              asset.unit
+            )}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `‏ ${name}: ${price}\n`;
