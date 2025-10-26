@@ -235,7 +235,9 @@ export class TelegramMarketsBot {
         const flag = this.getCurrencyFlag(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
-          ? `${this.formatPrice(asset.cprice)} ${this.formatUnit(asset.unit)}`
+          ? `${this.formatPrice(
+              parseFloat(asset.cprice).toFixed(2)
+            )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `‏${flag} ${name}: ${price}\n`;
@@ -249,10 +251,10 @@ export class TelegramMarketsBot {
       marketData.gold.forEach((asset: any) => {
         // const emoji = this.getGoldEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
-        const price = asset.cprice.toFixed(2)
-          ? `${this.formatPrice(asset.cprice.toFixed(2))} ${this.formatUnit(
-              asset.unit
-            )}`
+        const price = asset.cprice
+          ? `${this.formatPrice(
+              parseFloat(asset.cprice).toFixed(2)
+            )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `‏ ${name}: ${price}\n`;
@@ -314,7 +316,12 @@ export class TelegramMarketsBot {
     const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
     // Return with decimal part if exists, otherwise just integer part
-    return parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+    if (parts.length > 1) {
+      // Remove trailing zeros from decimal part
+      const decimalPart = parts[1].replace(/0+$/, "");
+      return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+    }
+    return integerPart;
   }
 
   private formatUnit(unit: string): string {
