@@ -19,3 +19,14 @@ export interface ICryptoInvoiceConfirmation {
   status: INVOICE_STATUS;
   referenceNumber?: string;
 }
+
+export interface INotificationData {
+  title: string;
+  description: string;
+  url?: string;
+  tag?: string;
+  image?: string;
+  actions?: string[];
+  vibrate?: string[];
+  silent?: boolean;
+}
