@@ -3,6 +3,7 @@ import cors from "cors";
 import { config } from "./utils/config";
 import { telegramSupportBot } from "./support-bot/bot/telegram-bot";
 import { telegramMarketsBot } from "./markets-bot/bot/telegram-bot";
+import { telegramNotifBot } from "./notif-bot/bot/telegram-bot";
 import { adminAuthService } from "./support-bot/services/admin-auth.service";
 
 const app = express();
@@ -237,22 +238,31 @@ async function startApplication(): Promise<void> {
 
     const startBots = async () => {
       const botPromises = [
-        telegramSupportBot
-          .start()
-          .then(() => {
-            console.log("✅ Support Bot started successfully");
-          })
-          .catch((error) => {
-            console.error("❌ Failed to start Support Bot:", error);
-          }),
+        // telegramSupportBot
+        //   .start()
+        //   .then(() => {
+        //     console.log("✅ Support Bot started successfully");
+        //   })
+        //   .catch((error) => {
+        //     console.error("❌ Failed to start Support Bot:", error);
+        //   }),
 
-        telegramMarketsBot
+        // telegramMarketsBot
+        //   .start()
+        //   .then(() => {
+        //     console.log("✅ Markets Bot started successfully");
+        //   })
+        //   .catch((error) => {
+        //     console.error("❌ Failed to start Markets Bot:", error);
+        //   }),
+
+        telegramNotifBot
           .start()
           .then(() => {
-            console.log("✅ Markets Bot started successfully");
+            console.log("✅ Notif Bot started successfully");
           })
           .catch((error) => {
-            console.error("❌ Failed to start Markets Bot:", error);
+            console.error("❌ Failed to start Notif Bot:", error);
           }),
       ];
 
@@ -270,18 +280,25 @@ async function startApplication(): Promise<void> {
         console.log("✅ HTTP server closed");
       });
 
-      try {
-        await telegramSupportBot.stop();
-        console.log("✅ Support Bot stopped");
-      } catch (error) {
-        console.error("❌ Error stopping Support Bot:", error);
-      }
+      // try {
+      //   await telegramSupportBot.stop();
+      //   console.log("✅ Support Bot stopped");
+      // } catch (error) {
+      //   console.error("❌ Error stopping Support Bot:", error);
+      // }
+
+      // try {
+      //   await telegramMarketsBot.stop();
+      //   console.log("✅ Markets Bot stopped");
+      // } catch (error) {
+      //   console.error("❌ Error stopping Markets Bot:", error);
+      // }
 
       try {
-        await telegramMarketsBot.stop();
-        console.log("✅ Markets Bot stopped");
+        await telegramNotifBot.stop();
+        console.log("✅ Notif Bot stopped");
       } catch (error) {
-        console.error("❌ Error stopping Markets Bot:", error);
+        console.error("❌ Error stopping Notif Bot:", error);
       }
 
       process.exit(0);

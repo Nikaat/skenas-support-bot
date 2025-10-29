@@ -22,7 +22,7 @@ export interface ICryptoInvoiceConfirmation {
 
 export interface INotificationData {
   title: string;
-  description: string;
+  body: string;
   url?: string;
   tag?: string;
   image?: string;

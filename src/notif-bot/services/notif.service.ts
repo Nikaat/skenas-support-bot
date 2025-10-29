@@ -1,9 +1,6 @@
 import axios from "axios";
 import { config } from "../../utils/config";
-import {
-  ICryptoInvoiceConfirmation,
-  INotificationData,
-} from "../../enums/support-bot-enums";
+import { INotificationData } from "../../enums/support-bot-enums";
 
 export class NotifService {
   private readonly baseUrl: string;
@@ -36,8 +33,8 @@ export class NotifService {
         return false;
       }
 
-      const { data } = await axios.patch(
-        `${this.baseUrl}/api/push-notification/send-to-user`,
+      const { data } = await axios.post(
+        `https://apitest.skenas.io/api/push-notification/send-to-user`,
         {
           notificationData,
           userId,
@@ -89,8 +86,8 @@ export class NotifService {
         return false;
       }
 
-      const { data } = await axios.patch(
-        `${this.baseUrl}/api/push-notification/broadcast`,
+      const { data } = await axios.post(
+        `https://apitest.skenas.io/api/push-notification/broadcast`,
         {
           notificationData,
         },
