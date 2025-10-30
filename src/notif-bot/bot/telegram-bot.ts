@@ -52,6 +52,14 @@ export class TelegramNotifBot {
   }
 
   // ---------- Helpers ----------
+  private generateRandomTag(): string {
+    const chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let out = "";
+    for (let i = 0; i < 10; i++)
+      out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
   private async requireAdmin(ctx: Context): Promise<{
     phoneNumber: string;
     chatId: string;
@@ -76,13 +84,11 @@ export class TelegramNotifBot {
 
   private askChoice(
     ctx: Context,
-    field: "url" | "tag" | "image"
+    field: "url" | "image"
   ): Promise<Message.TextMessage | Message> {
     const askText =
       field === "url"
         ? "🔗 لینکی که یوزر به اون میره رو داری؟ "
-        : field === "tag"
-        ? "🏷️ آیدی تگ نوتیفیکیشن رو داری؟"
         : "🖼️ لینک عکسی که به یوزر نشون داده میشه رو داری؟";
 
     return ctx.reply(askText, {
@@ -99,14 +105,10 @@ export class TelegramNotifBot {
 
   private askValuePrompt(
     ctx: Context,
-    field: "url" | "tag" | "image"
+    field: "url" | "image"
   ): Promise<Message.TextMessage | Message> {
     const prompt =
-      field === "url"
-        ? "🔗 لینک رو وارد کن:"
-        : field === "tag"
-        ? "🏷️ تگ رو وارد کن:"
-        : "🖼️ لینک عکس رو وارد کن:";
+      field === "url" ? "🔗 لینک رو وارد کن:" : "🖼️ لینک عکس رو وارد کن:";
     return ctx.reply(prompt);
   }
 
@@ -115,7 +117,7 @@ export class TelegramNotifBot {
       title: data.title!,
       body: data.body!,
       url: data.url || "/",
-      tag: data.tag || "",
+      tag: this.generateRandomTag(),
       image: data.image || "",
     };
   }
@@ -238,24 +240,21 @@ export class TelegramNotifBot {
 
       if (pending.step === "await_url") {
         if (text !== "-") pending.data.url = text;
-        pending.step = "await_tag_choice";
-        await pendingNotifService.set(chatId.toString(), pending);
-        await this.askChoice(ctx, "tag");
-        return;
-      }
-
-      if (pending.step === "await_tag") {
-        if (text !== "-") pending.data.tag = text;
+        pending.data.tag = this.generateRandomTag();
         pending.step = "await_image_choice";
         await pendingNotifService.set(chatId.toString(), pending);
         await this.askChoice(ctx, "image");
         return;
       }
 
+      // removed tag step; we always generate automatically
+
       if (pending.step === "await_image") {
         if (text !== "-") pending.data.image = text;
 
         const payload: INotificationData = this.buildPayload(pending.data);
+
+        await ctx.reply("⏳ در حال ارسال نوتیفیکیشن...");
 
         const ok = await notifService.sendNotificationToUser(
           payload,
@@ -293,22 +292,18 @@ export class TelegramNotifBot {
       }
       if (pending.step === "await_url") {
         if (text !== "-") pending.data.url = text;
-        pending.step = "await_tag_choice";
-        await pendingNotifService.set(chatId.toString(), pending);
-        await this.askChoice(ctx, "tag");
-        return;
-      }
-      if (pending.step === "await_tag") {
-        if (text !== "-") pending.data.tag = text;
+        pending.data.tag = this.generateRandomTag();
         pending.step = "await_image_choice";
         await pendingNotifService.set(chatId.toString(), pending);
         await this.askChoice(ctx, "image");
         return;
       }
+      // removed tag step; we always generate automatically
 
       if (pending.step === "await_image") {
         if (text !== "-") pending.data.image = text;
         const payload: INotificationData = this.buildPayload(pending.data);
+        await ctx.reply("⏳ در حال ارسال نوتیفیکیشن...");
         const ok = await notifService.broadcastNotification(payload);
         await pendingNotifService.clear(chatId.toString());
         if (ok) {
@@ -372,21 +367,7 @@ export class TelegramNotifBot {
         await this.askValuePrompt(ctx, "url");
       } else {
         pending.data.url = "/";
-        pending.step = "await_tag_choice" as any;
-        await pendingNotifService.set(chatId.toString(), pending);
-        await this.askChoice(ctx, "tag");
-      }
-      await (ctx as any).answerCbQuery?.();
-      return;
-    }
-
-    if (field === "tag") {
-      if (yes) {
-        pending.step = "await_tag" as any;
-        await pendingNotifService.set(chatId.toString(), pending);
-        await this.askValuePrompt(ctx, "tag");
-      } else {
-        pending.data.tag = "";
+        pending.data.tag = this.generateRandomTag();
         pending.step = "await_image_choice" as any;
         await pendingNotifService.set(chatId.toString(), pending);
         await this.askChoice(ctx, "image");
@@ -394,6 +375,8 @@ export class TelegramNotifBot {
       await (ctx as any).answerCbQuery?.();
       return;
     }
+
+    // removed tag callback handling; tag is always auto-generated
 
     if (field === "image") {
       if (yes) {
@@ -487,9 +470,10 @@ export class TelegramNotifBot {
         title: pending.data.title!,
         body: pending.data.body!,
         url: pending.data.url || "/",
-        tag: pending.data.tag || "",
+        tag: this.generateRandomTag() || "",
         image: pending.data.image || "",
       };
+      await ctx.reply("⏳ در حال ارسال نوتیفیکیشن...");
       const ok = await notifService.sendNotificationToUser(
         payload,
         pending.data.userId!
@@ -512,9 +496,10 @@ export class TelegramNotifBot {
         title: pending.data.title!,
         body: pending.data.body!,
         url: pending.data.url || "/",
-        tag: pending.data.tag || "",
+        tag: this.generateRandomTag() || "",
         image: pending.data.image || "",
       };
+      await ctx.reply("⏳ در حال ارسال نوتیفیکیشن...");
       const ok = await notifService.broadcastNotification(payload);
       await pendingNotifService.clear(chatId.toString());
       await ctx.reply(
