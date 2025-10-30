@@ -1,5 +1,5 @@
 import { Context } from "telegraf";
-import { adminAuthService } from "../../support-bot/services/admin-auth.service";
+import { notifAdminAuthService } from "../services/admin-auth.service";
 import { KeyboardButton } from "telegraf/typings/core/types/typegram";
 
 export const startCommand = {
@@ -14,7 +14,7 @@ export const startCommand = {
       }
 
       // Check if user already has an active session
-      const existingSession = await adminAuthService.getAdminSession(
+      const existingSession = await notifAdminAuthService.getAdminSession(
         chatId.toString()
       );
 

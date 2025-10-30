@@ -34,7 +34,7 @@ export class NotifService {
       }
 
       const { data } = await axios.post(
-        `https://apitest.skenas.io/api/push-notification/send-to-user`,
+        `${config.skenas.apiBaseUrl}/api/push-notification/send-to-user`,
         {
           notificationData,
           userId,
@@ -87,7 +87,7 @@ export class NotifService {
       }
 
       const { data } = await axios.post(
-        `https://apitest.skenas.io/api/push-notification/broadcast`,
+        `${config.skenas.apiBaseUrl}/api/push-notification/broadcast`,
         {
           notificationData,
         },

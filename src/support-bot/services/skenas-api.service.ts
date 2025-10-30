@@ -144,7 +144,7 @@ export class SkenasApiService {
       }
 
       const response = await axios.patch(
-        `https://api.skenas.io/api/telegram-bot/wallet/cash-out/update-invoice`,
+        `${config.skenas.apiBaseUrl}/api/telegram-bot/wallet/cash-out/update-invoice`,
         {
           trackId: confirmation.trackId,
           newStatus: confirmation.status,

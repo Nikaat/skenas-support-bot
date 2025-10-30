@@ -238,23 +238,23 @@ async function startApplication(): Promise<void> {
 
     const startBots = async () => {
       const botPromises = [
-        // telegramSupportBot
-        //   .start()
-        //   .then(() => {
-        //     console.log("✅ Support Bot started successfully");
-        //   })
-        //   .catch((error) => {
-        //     console.error("❌ Failed to start Support Bot:", error);
-        //   }),
+        telegramSupportBot
+          .start()
+          .then(() => {
+            console.log("✅ Support Bot started successfully");
+          })
+          .catch((error) => {
+            console.error("❌ Failed to start Support Bot:", error);
+          }),
 
-        // telegramMarketsBot
-        //   .start()
-        //   .then(() => {
-        //     console.log("✅ Markets Bot started successfully");
-        //   })
-        //   .catch((error) => {
-        //     console.error("❌ Failed to start Markets Bot:", error);
-        //   }),
+        telegramMarketsBot
+          .start()
+          .then(() => {
+            console.log("✅ Markets Bot started successfully");
+          })
+          .catch((error) => {
+            console.error("❌ Failed to start Markets Bot:", error);
+          }),
 
         telegramNotifBot
           .start()
@@ -280,19 +280,19 @@ async function startApplication(): Promise<void> {
         console.log("✅ HTTP server closed");
       });
 
-      // try {
-      //   await telegramSupportBot.stop();
-      //   console.log("✅ Support Bot stopped");
-      // } catch (error) {
-      //   console.error("❌ Error stopping Support Bot:", error);
-      // }
+      try {
+        await telegramSupportBot.stop();
+        console.log("✅ Support Bot stopped");
+      } catch (error) {
+        console.error("❌ Error stopping Support Bot:", error);
+      }
 
-      // try {
-      //   await telegramMarketsBot.stop();
-      //   console.log("✅ Markets Bot stopped");
-      // } catch (error) {
-      //   console.error("❌ Error stopping Markets Bot:", error);
-      // }
+      try {
+        await telegramMarketsBot.stop();
+        console.log("✅ Markets Bot stopped");
+      } catch (error) {
+        console.error("❌ Error stopping Markets Bot:", error);
+      }
 
       try {
         await telegramNotifBot.stop();

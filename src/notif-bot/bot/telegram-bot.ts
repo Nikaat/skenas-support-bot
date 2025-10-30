@@ -1,8 +1,8 @@
-import { Telegraf, Context } from "telegraf";
+import { Telegraf, Context, Markup } from "telegraf";
 import type { Message } from "telegraf/typings/core/types/typegram";
 import { config } from "../../utils/config";
 import { startCommand as startCmd } from "../commands/start.command";
-import { adminAuthService } from "../../support-bot/services/admin-auth.service";
+import { notifAdminAuthService } from "../services/admin-auth.service";
 import { pendingNotifService } from "../services/pending-notif.service";
 import { notifService } from "../services/notif.service";
 import { INotificationData } from "../../enums/support-bot-enums";
@@ -19,7 +19,28 @@ function mainMenu() {
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
-  };
+  }; // بدون as const
+}
+
+function phoneRequestKeyboard() {
+  return {
+    keyboard: [
+      [{ text: "اشتراک‌گذاری شماره تلفن ☎️", request_contact: true }],
+      [{ text: MENU_CANCEL }],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: true,
+  }; // بدون as const
+}
+
+function normalizePhone(raw: string): string {
+  // Keep digits and leading plus
+  let p = raw.replace(/[^\d+]/g, "");
+  if (p.startsWith("+")) return p;
+  if (p.startsWith("00")) return "+" + p.slice(2);
+  if (p.startsWith("98")) return "+" + p;
+  if (p.startsWith("0")) return "+98" + p.slice(1);
+  return "+" + p; // last-resort normalization
 }
 
 export class TelegramNotifBot {
@@ -38,10 +59,15 @@ export class TelegramNotifBot {
   } | null> {
     const chatId = ctx.chat?.id;
     if (!chatId) return null;
-    const session = await adminAuthService.getAdminSession(chatId.toString());
+
+    const session = await notifAdminAuthService.getAdminSession(
+      chatId.toString()
+    );
+
     if (!session) {
       await ctx.reply(
-        "❌ شما به عنوان ادمین احراز هویت نشده‌اید. از /start استفاده کن."
+        "❌ شما به عنوان ادمین احراز هویت نشده‌اید. از /start استفاده کن یا شماره تلفنت رو با دکمه زیر بفرست.",
+        { reply_markup: phoneRequestKeyboard() }
       );
       return null;
     }
@@ -84,12 +110,6 @@ export class TelegramNotifBot {
     return ctx.reply(prompt);
   }
 
-  private nextField(current: "url" | "tag" | "image"): "tag" | "image" | null {
-    if (current === "url") return "tag";
-    if (current === "tag") return "image";
-    return null;
-  }
-
   private buildPayload(data: Partial<INotificationData>): INotificationData {
     return {
       title: data.title!,
@@ -101,14 +121,24 @@ export class TelegramNotifBot {
   }
 
   private setupCommands(): void {
+    // /start command
     this.bot.command(startCmd.command, async (ctx) => {
       await startCmd.handler(ctx);
-      // if the admin is already authenticated, show menu immediately
+
       const chatId = ctx.chat?.id;
       if (!chatId) return;
-      const session = await adminAuthService.getAdminSession(chatId.toString());
+
+      const session = await notifAdminAuthService.getAdminSession(
+        chatId.toString()
+      );
+
       if (session) {
         await ctx.reply("🧭 منوی نوتیفیکیشن:", { reply_markup: mainMenu() });
+      } else {
+        await ctx.reply(
+          "برای ادامه، شماره تلفن خود را با دکمه زیر ارسال کن تا دسترسی ادمین بررسی شود.",
+          { reply_markup: phoneRequestKeyboard() }
+        );
       }
     });
 
@@ -117,6 +147,9 @@ export class TelegramNotifBot {
 
     // Inline buttons handler for optional fields
     this.bot.on("callback_query", this.handleCallback.bind(this));
+
+    // Contact handler for admin registration
+    this.bot.on("contact", this.handleContact.bind(this));
   }
 
   private async handleText(
@@ -124,14 +157,10 @@ export class TelegramNotifBot {
   ): Promise<void> {
     const text = ctx.message.text?.trim();
     const chatId = ctx.chat?.id;
-    if (!chatId) return;
+    if (!chatId || !text) return;
 
     // Ignore slash commands
     if (text.startsWith("/")) return;
-
-    // Ensure admin
-    const session = await this.requireAdmin(ctx);
-    if (!session) return;
 
     // Cancel flow
     if (text === MENU_CANCEL) {
@@ -139,6 +168,10 @@ export class TelegramNotifBot {
       await ctx.reply("🚫 عملیات لغو شد.", { reply_markup: mainMenu() });
       return;
     }
+
+    // Ensure admin
+    const session = await this.requireAdmin(ctx);
+    if (!session) return;
 
     // Check for menu tap when there is no pending flow
     const pending = await pendingNotifService.get(chatId.toString());
@@ -150,7 +183,7 @@ export class TelegramNotifBot {
           data: {},
         });
         await ctx.reply(
-          "👤 شناسه کاربر(شماره تلفن) رو وارد کن (مثال: +98123456789)"
+          "👤 شناسه کاربر (شماره تلفن) را وارد کن (مثال: +989123456789)"
         );
         return;
       }
@@ -173,9 +206,11 @@ export class TelegramNotifBot {
     // Continue the flow
     if (pending.kind === "notif_send_one") {
       if (pending.step === "await_user_id") {
-        // Validate E.164-ish: leading + and digits
+        // Validate Iranian E.164: +98 followed by 10 digits (e.g., +989xxxxxxxxx)
         if (!/^\+98\d{10}$/.test(text)) {
-          await ctx.reply("⚠️ قالب شماره تلفن نامعتبر است. مثال: +98123456789");
+          await ctx.reply(
+            "⚠️ قالب شماره تلفن نامعتبر است. مثال صحیح: +989123456789"
+          );
           return;
         }
         pending.data.userId = text;
@@ -296,27 +331,29 @@ export class TelegramNotifBot {
     const chatId = ctx.chat?.id;
     if (!chatId || !data) {
       try {
-        await ctx.answerCbQuery();
+        await (ctx as any).answerCbQuery?.();
       } catch {}
       return;
     }
 
     // Ensure admin session
-    const session = await adminAuthService.getAdminSession(chatId.toString());
+    const session = await notifAdminAuthService.getAdminSession(
+      chatId.toString()
+    );
     if (!session) {
-      await ctx.answerCbQuery("اول با /start احراز هویت کن");
+      await (ctx as any).answerCbQuery?.("اول با /start احراز هویت کن");
       return;
     }
 
     const pending = await pendingNotifService.get(chatId.toString());
     if (!pending) {
-      await ctx.answerCbQuery();
+      await (ctx as any).answerCbQuery?.();
       return;
     }
 
     // opt:<field>:yes|no
     if (!data.startsWith("opt:")) {
-      await ctx.answerCbQuery();
+      await (ctx as any).answerCbQuery?.();
       return;
     }
 
@@ -325,15 +362,8 @@ export class TelegramNotifBot {
 
     // Clean buttons on message
     try {
-      await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+      await (ctx as any).editMessageReplyMarkup({ inline_keyboard: [] });
     } catch {}
-
-    const askTagChoice = async () => {
-      await this.askChoice(ctx, "tag");
-    };
-    const askImageChoice = async () => {
-      await this.askChoice(ctx, "image");
-    };
 
     if (field === "url") {
       if (yes) {
@@ -344,9 +374,9 @@ export class TelegramNotifBot {
         pending.data.url = "/";
         pending.step = "await_tag_choice" as any;
         await pendingNotifService.set(chatId.toString(), pending);
-        await askTagChoice();
+        await this.askChoice(ctx, "tag");
       }
-      await ctx.answerCbQuery();
+      await (ctx as any).answerCbQuery?.();
       return;
     }
 
@@ -359,9 +389,9 @@ export class TelegramNotifBot {
         pending.data.tag = "";
         pending.step = "await_image_choice" as any;
         await pendingNotifService.set(chatId.toString(), pending);
-        await askImageChoice();
+        await this.askChoice(ctx, "image");
       }
-      await ctx.answerCbQuery();
+      await (ctx as any).answerCbQuery?.();
       return;
     }
 
@@ -375,8 +405,71 @@ export class TelegramNotifBot {
         // complete based on flow
         await this.finishIfComplete(ctx as any, pending);
       }
-      await ctx.answerCbQuery();
+      await (ctx as any).answerCbQuery?.();
       return;
+    }
+  }
+
+  private async handleContact(
+    ctx: Context & { message: Message.ContactMessage }
+  ): Promise<void> {
+    try {
+      const contact = ctx.message.contact;
+      if (!contact || !contact.phone_number) {
+        await ctx.reply(
+          "❌ لطفاً از دکمه 'اشتراک‌گذاری شماره تلفن' استفاده کنید.\n\nشماره تلفن را به صورت دستی تایپ نکنید.",
+          { reply_markup: phoneRequestKeyboard() }
+        );
+        return;
+      }
+
+      const phoneNumber = normalizePhone(contact.phone_number);
+      const chatId = ctx.chat?.id;
+
+      if (!chatId) {
+        await ctx.reply(
+          "❌ قادر به شناسایی چت نیستیم. لطفاً دوباره تلاش کنید."
+        );
+        return;
+      }
+
+      // Remove the phone number keyboard
+      await ctx.reply("⏳ در حال تأیید دسترسی ادمین...", {
+        reply_markup: { remove_keyboard: true },
+      });
+
+      // Verify if this phone number belongs to an admin
+      const isAdmin = await notifAdminAuthService.verifyAdminByPhone(
+        phoneNumber
+      );
+
+      if (isAdmin) {
+        // Create admin session
+        await notifAdminAuthService.createAdminSession(
+          phoneNumber,
+          chatId.toString()
+        );
+
+        await ctx.reply(
+          `✅ <b>دسترسی ادمین تأیید شد!</b>\n\n` +
+            `خوش آمدید! شماره تلفن ${phoneNumber} شما به عنوان ادمین تأیید شده است.\n\n` +
+            `اکنون می‌توانید از منوی زیر استفاده کنید یا دستورات زیر را ببینید:\n` +
+            `• /start - نمایش منو\n` +
+            `• /help - نمایش دستورات موجود`,
+          { parse_mode: "HTML", reply_markup: mainMenu() as any }
+        );
+      } else {
+        await ctx.reply(
+          `❌ <b>دسترسی رد شد</b>\n\n` +
+            `شماره تلفن ${phoneNumber} در لیست ادمین‌ها نیست.\n\n` +
+            `لطفاً با مدیر سیستم تماس بگیرید تا به لیست ادمین‌ها اضافه شوید.`,
+          { parse_mode: "HTML", reply_markup: phoneRequestKeyboard() as any }
+        );
+      }
+    } catch (error) {
+      await ctx.reply(
+        "❌ خطایی در حین پردازش اطلاعات تماس شما رخ داد. لطفاً دوباره تلاش کنید."
+      );
     }
   }
 
@@ -427,7 +520,7 @@ export class TelegramNotifBot {
       await ctx.reply(
         ok
           ? "✅ نوتیفیکیشن برای همه یوزرها ارسال شد."
-          : "❌ ارسال نوتیفیکیشن برای همه یوزرها ناموفق بود.",
+          : "❌ نوتیفیکیشن برای همه یوزرها ناموفق بود.",
         { reply_markup: mainMenu() }
       );
       return;
