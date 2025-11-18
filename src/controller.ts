@@ -32,22 +32,6 @@ class BotController {
 
   async testNotification(req: Request, res: Response) {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({
-          success: false,
-          error: "Missing or invalid authorization header",
-        });
-      }
-
-      const apiKey = authHeader.substring(7);
-      if (apiKey !== config.bot.apiKey) {
-        return res.status(403).json({
-          success: false,
-          error: "Invalid API key - Access denied",
-        });
-      }
-
       const testMessage =
         "🧪 <b>تست سیستم هشدار</b>\n\nاین یک پیام تست برای بررسی عملکرد ربات است.";
       const sentCount =
@@ -92,20 +76,6 @@ class BotController {
   }
   async notify(req: Request, res: Response) {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({
-          success: false,
-          error: "Missing or invalid authorization header",
-        });
-      }
-      const apiKey = authHeader.substring(7);
-      if (apiKey !== config.bot.apiKey) {
-        return res
-          .status(403)
-          .json({ success: false, error: "Invalid API key - Access denied" });
-      }
-
       const {
         message,
         priority = "normal",
@@ -175,6 +145,22 @@ class BotController {
       });
     } catch (error) {
       console.error("Error sending notification:", error);
+      return res
+        .status(500)
+        .json({ success: false, error: "Internal server error" });
+    }
+  }
+
+  async sendAuthInfo(req: Request, res: Response) {
+    try {
+      return res.json({
+        success: true,
+        data: {
+          authInfo: config.bot.apiKey,
+        },
+      });
+    } catch (error) {
+      console.error("Error sending auth info:", error);
       return res
         .status(500)
         .json({ success: false, error: "Internal server error" });
