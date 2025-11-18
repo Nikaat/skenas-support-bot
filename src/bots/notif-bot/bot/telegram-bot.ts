@@ -1,11 +1,11 @@
 import { Telegraf, Context, Markup } from "telegraf";
 import type { Message } from "telegraf/typings/core/types/typegram";
-import { config } from "../../utils/config";
+import { config } from "../../../utils/config";
 import { startCommand as startCmd } from "../commands/start.command";
 import { notifAdminAuthService } from "../services/admin-auth.service";
 import { pendingNotifService } from "../services/pending-notif.service";
 import { notifService } from "../services/notif.service";
-import { INotificationData } from "../../enums/support-bot-enums";
+import { INotificationData } from "../../../enums/support-bot-enums";
 
 const MENU_SEND_ONE = "ارسال نوتیفیکیشن به یک یوزر 👤";
 const MENU_BROADCAST = "ارسال نوتیفیکیشن به همه یوزرها 📢";

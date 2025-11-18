@@ -1,6 +1,6 @@
 import axios from "axios";
-import { config } from "../../utils/config";
-import { ICryptoInvoiceConfirmation } from "../../enums/support-bot-enums";
+import { config } from "../../../utils/config";
+import { ICryptoInvoiceConfirmation } from "../../../enums/support-bot-enums";
 
 export class SkenasApiService {
   private readonly baseUrl: string;

@@ -1,6 +1,6 @@
-import { config } from "../../utils/config";
-import { IAdminSession } from "../../enums/support-bot-enums";
-import redis from "../../utils/redis";
+import { config } from "../../../utils/config";
+import { IAdminSession } from "../../../enums/support-bot-enums";
+import redis from "../../../utils/redis";
 
 export class AdminAuthService {
   private readonly sessionPrefix = "admin_session:";

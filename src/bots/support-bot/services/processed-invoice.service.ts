@@ -1,6 +1,6 @@
 // services/processed-invoice.service.ts
-import redis from "../../utils/redis";
-import { INVOICE_STATUS } from "../../enums/support-bot-enums";
+import redis from "../../../utils/redis";
+import { INVOICE_STATUS } from "../../../enums/support-bot-enums";
 
 export interface ProcessedInvoice {
   trackId: string;

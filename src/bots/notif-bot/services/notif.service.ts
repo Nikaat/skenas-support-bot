@@ -1,6 +1,6 @@
 import axios from "axios";
-import { config } from "../../utils/config";
-import { INotificationData } from "../../enums/support-bot-enums";
+import { config } from "../../../utils/config";
+import { INotificationData } from "../../../enums/support-bot-enums";
 
 export class NotifService {
   private readonly baseUrl: string;

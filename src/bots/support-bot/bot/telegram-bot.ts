@@ -3,14 +3,14 @@ import type {
   InlineKeyboardMarkup,
   Message,
 } from "telegraf/typings/core/types/typegram";
-import { config } from "../../utils/config";
+import { config } from "../../../utils/config";
 import { adminAuthService } from "../services/admin-auth.service";
 import { startCommand } from "../commands/start.command";
 import { logsCommand } from "../commands/logs.command";
 import { logoutCommand } from "../commands/logout.command";
 import { helpCommand } from "../commands/help.command";
 import { statusCommand } from "../commands/status.command";
-import { INVOICE_STATUS } from "../../enums/support-bot-enums";
+import { INVOICE_STATUS } from "../../../enums/support-bot-enums";
 import { pendingActionService } from "../services/pending-action.service";
 import { skenasApiService } from "../services/skenas-api.service";
 import { processedInvoiceService } from "../services/processed-invoice.service";

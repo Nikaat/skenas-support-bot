@@ -1,6 +1,6 @@
 // services/pending-action.service.ts
-import redis from "../../utils/redis";
-import { INVOICE_STATUS } from "../../enums/support-bot-enums";
+import redis from "../../../utils/redis";
+import { INVOICE_STATUS } from "../../../enums/support-bot-enums";
 
 export type PendingCryptoAction = {
   kind: "crypto_confirm";

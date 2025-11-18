@@ -1,6 +1,6 @@
-import { config } from "../../utils/config";
-import { IAdminSession } from "../../enums/support-bot-enums";
-import redis from "../../utils/redis";
+import { config } from "../../../utils/config";
+import { IAdminSession } from "../../../enums/support-bot-enums";
+import redis from "../../../utils/redis";
 
 export class NotifAdminAuthService {
   private readonly sessionPrefix = "notif_admin_session:";

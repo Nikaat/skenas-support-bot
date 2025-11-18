@@ -1,7 +1,7 @@
 import { Telegraf, Context } from "telegraf";
-import { config } from "../../utils/config";
+import { config } from "../../../utils/config";
 import { marketsService } from "../services/markets.service";
-import redis from "../../utils/redis";
+import redis from "../../../utils/redis";
 
 export class TelegramMarketsBot {
   private bot: Telegraf<Context>;

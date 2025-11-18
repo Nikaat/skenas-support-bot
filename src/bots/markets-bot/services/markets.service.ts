@@ -1,6 +1,6 @@
 import axios from "axios";
-import { config } from "../../utils/config";
-import { ASSET_TYPES } from "../../enums/markets-bot-enums";
+import { config } from "../../../utils/config";
+import { ASSET_TYPES } from "../../../enums/markets-bot-enums";
 
 interface MarketAsset {
   symbol: string;

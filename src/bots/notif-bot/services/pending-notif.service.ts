@@ -1,5 +1,5 @@
-import redis from "../../utils/redis";
-import { INotificationData } from "../../enums/support-bot-enums";
+import redis from "../../../utils/redis";
+import { INotificationData } from "../../../enums/support-bot-enums";
 
 // Conversation kinds for notif-bot
 export type PendingNotifSendOne = {
