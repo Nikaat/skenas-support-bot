@@ -66,7 +66,7 @@ export class MarketsService {
       const assetTypes = [
         ASSET_TYPES.CURRENCY,
         ASSET_TYPES.CRYPTO,
-        ASSET_TYPES.GOLD,
+        ASSET_TYPES.GOLD_SILVER,
       ];
       const marketData: MarketData = {
         currency: [],
@@ -110,7 +110,7 @@ export class MarketsService {
                 );
                 marketData.crypto = filteredAssets;
                 break;
-              case ASSET_TYPES.GOLD:
+              case ASSET_TYPES.GOLD_SILVER:
                 filteredAssets = this.filterAssetsBySymbols(
                   data,
                   this.targetSymbols.gold
