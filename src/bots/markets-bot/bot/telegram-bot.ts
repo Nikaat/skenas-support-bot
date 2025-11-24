@@ -257,7 +257,13 @@ export class TelegramMarketsBot {
             )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
-        message += `‏ ${name}: ${price}\n`;
+
+        // Make name a link if tradable
+        const displayName = asset.tradable
+          ? `<a href="${config.skenas.baseUrl}/investment/gold-silver/${asset.symbol}">${name}</a>`
+          : name;
+
+        message += `‏ ${displayName}: ${price}\n`;
       });
       message += "\n";
     }
