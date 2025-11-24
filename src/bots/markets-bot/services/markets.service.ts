@@ -44,7 +44,16 @@ export class MarketsService {
       "LTC",
       "CAKE",
     ],
-    gold: ["GERAM18", "GERAM24", "SEKEE_EMAMI", "NIM", "ROB", "GERAMI", "ONS"],
+    gold: [
+      "IRTICHGOLD01",
+      "IRTICHSILV01",
+      "GERAM18",
+      "SEKEE_EMAMI",
+      "NIM",
+      "ROB",
+      "GERAMI",
+      "ONS",
+    ],
   };
 
   constructor() {
