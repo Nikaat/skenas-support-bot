@@ -247,7 +247,7 @@ export class TelegramMarketsBot {
 
     // Gold data
     if (marketData.gold && marketData.gold.length > 0) {
-      message += "💰 <b>طلا و سکه</b>\n\n";
+      message += "💰 <b>طلا و نقره</b>\n\n";
       marketData.gold.forEach((asset: any) => {
         // const emoji = this.getGoldEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
