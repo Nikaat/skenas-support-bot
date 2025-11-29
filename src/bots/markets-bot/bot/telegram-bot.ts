@@ -33,7 +33,7 @@ export class TelegramMarketsBot {
             `📢 <b>Markets Channel:</b> ${this.marketsChannelId}\n` +
             `⏰ <b>Frequency:</b> Every 3 minutes\n\n` +
             `📢 <b>Official Channel:</b> ${this.officialChannelId}\n` +
-            `⏰ <b>Frequency:</b> 9 AM, 3 PM, 9 PM daily\n\n` +
+            `⏰ <b>Frequency:</b> 1:30 PM daily\n\n` +
             "This bot automatically sends market data to both channels.",
           { parse_mode: "HTML" }
         );
@@ -101,7 +101,7 @@ export class TelegramMarketsBot {
         `📢 Markets channel: ${this.marketsChannelId} (every 3 minutes)`
       );
       console.log(
-        `📢 Official channel: ${this.officialChannelId} (9 AM, 3 PM, 9 PM)`
+        `📢 Official channel: ${this.officialChannelId} (1:30 PM daily)`
       );
 
       // Start both schedulers
@@ -180,18 +180,16 @@ export class TelegramMarketsBot {
       const hour = iranTime.getHours();
       const minute = iranTime.getMinutes();
 
-      // Check if it's one of the scheduled times (9 AM, 3 PM, 9 PM) in Iran time
-      const scheduledTimes = [9, 15, 21]; // 9 AM, 3 PM, 9 PM Iran time
-      const isScheduledTime = scheduledTimes.includes(hour) && minute === 0;
+      // Check if it's the scheduled time (1:30 PM) in Iran time
+      const isScheduledTime = hour === 13 && minute === 30;
 
       // Get last sent time from Redis
       const lastOfficialSent = await this.getLastOfficialSent();
 
-      // Also check if we haven't sent to this channel in the last hour
+      // Check if we haven't sent to this channel today
       const shouldSend =
         isScheduledTime &&
-        (!lastOfficialSent ||
-          now.getTime() - lastOfficialSent.getTime() > 60 * 60 * 1000);
+        (!lastOfficialSent || this.isDifferentDay(now, lastOfficialSent));
 
       if (shouldSend) {
         const marketData = await marketsService.fetchMarketData();
@@ -200,13 +198,27 @@ export class TelegramMarketsBot {
           await this.sendMessageToChannel(this.officialChannelId, message);
           await this.setLastOfficialSent(now);
           console.log(
-            `✅ Market data sent to official channel at ${hour}:00 Iran time`
+            `✅ Market data sent to official channel at 13:30 Iran time`
           );
         }
       }
     } catch (error) {
       console.error("❌ Error checking/sending to official channel:", error);
     }
+  }
+
+  private isDifferentDay(date1: Date, date2: Date): boolean {
+    const d1 = new Date(
+      date1.toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+    );
+    const d2 = new Date(
+      date2.toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+    );
+    return (
+      d1.getFullYear() !== d2.getFullYear() ||
+      d1.getMonth() !== d2.getMonth() ||
+      d1.getDate() !== d2.getDate()
+    );
   }
 
   private formatMarketDataMessage(marketData: any): string {
