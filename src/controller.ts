@@ -78,21 +78,33 @@ class BotController {
     try {
       const {
         message,
-        priority = "normal",
         type,
-        meta,
-      } = req.body as {
-        message: string;
-        priority?: "low" | "normal" | "high";
+        priority = "normal",
+        meta: rawMeta,
+      } = req.query as {
+        message?: string;
         type?: string;
-        meta?: Record<string, any>;
+        priority?: "low" | "normal" | "high";
+        meta?: string;
       };
 
+      // Validate message
       if (!message || typeof message !== "string") {
         return res.status(400).json({
           success: false,
           error: "Message is required and must be a string",
         });
+      }
+
+      // Parse meta (query always comes as string)
+      let meta: any = {};
+      if (rawMeta) {
+        try {
+          meta = JSON.parse(String(rawMeta));
+        } catch (e) {
+          console.warn("⚠️ Failed to parse meta JSON:", rawMeta);
+          meta = {};
+        }
       }
 
       let sentCount = 0;
