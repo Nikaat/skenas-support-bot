@@ -81,11 +81,11 @@ class BotController {
         type,
         priority = "normal",
         meta: rawMeta,
-      } = req.query as {
+      } = req.body as {
         message?: string;
         type?: string;
         priority?: "low" | "normal" | "high";
-        meta?: string;
+        meta?: any;
       };
 
       // Validate message
@@ -96,14 +96,19 @@ class BotController {
         });
       }
 
-      // Parse meta (query always comes as string)
+      // Parse meta (may come as object or string)
       let meta: any = {};
+
       if (rawMeta) {
-        try {
-          meta = JSON.parse(String(rawMeta));
-        } catch (e) {
-          console.warn("⚠️ Failed to parse meta JSON:", rawMeta);
-          meta = {};
+        if (typeof rawMeta === "string") {
+          try {
+            meta = JSON.parse(rawMeta);
+          } catch (e) {
+            console.warn("⚠️ Failed to parse meta JSON:", rawMeta);
+            meta = {};
+          }
+        } else if (typeof rawMeta === "object") {
+          meta = rawMeta;
         }
       }
 

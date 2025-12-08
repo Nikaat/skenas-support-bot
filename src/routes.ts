@@ -12,6 +12,6 @@ router.post(
   botController.testNotification
 );
 router.get("/admin-phone-numbers", botController.getAdminPhoneNumbers);
-router.get("/notify", authenticateApiKey, botController.notify);
+router.post("/notify", authenticateApiKey, botController.notify);
 
 export default router;
