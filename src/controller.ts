@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { adminAuthService } from "./bots/support-bot/services/admin-auth.service";
 import { config } from "./utils/config";
 import { telegramSupportBot } from "./bots/support-bot/bot/telegram-bot";
+import { authBot } from "./bots/auth-bot/bot/auth-bot";
 
 class BotController {
   async getHealth(req: Request, res: Response) {
@@ -181,6 +182,119 @@ class BotController {
       return res
         .status(500)
         .json({ success: false, error: "Internal server error" });
+    }
+  }
+
+  async submitAuthFiles(req: Request, res: Response) {
+    try {
+      const { userId, userInfo, videoUrl, identityDocumentUrl } = req.body as {
+        userId: string;
+        userInfo?: {
+          name: string;
+          serialNumber?: string;
+          birthDate: string;
+          nationalCode: string;
+        };
+        videoUrl?: string;
+        identityDocumentUrl?: string;
+      };
+
+      // Validate userId
+      if (!userId || typeof userId !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "userId is required and must be a string",
+        });
+      }
+
+      // Validate userInfo
+      if (!userInfo || typeof userInfo !== "object") {
+        return res.status(400).json({
+          success: false,
+          error: "userInfo is required and must be an object",
+        });
+      }
+
+      if (!userInfo.name || typeof userInfo.name !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "userInfo.name is required and must be a string",
+        });
+      }
+
+      if (!userInfo.birthDate || typeof userInfo.birthDate !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "userInfo.birthDate is required and must be a string",
+        });
+      }
+
+      if (!userInfo.nationalCode || typeof userInfo.nationalCode !== "string") {
+        return res.status(400).json({
+          success: false,
+          error: "userInfo.nationalCode is required and must be a string",
+        });
+      }
+
+      // Validate that at least one URL is provided
+      if (!videoUrl && !identityDocumentUrl) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "At least one file URL (videoUrl or identityDocumentUrl) must be provided",
+        });
+      }
+
+      // Validate URLs format
+      const urlPattern = /^https?:\/\/.+/;
+      if (videoUrl && !urlPattern.test(videoUrl)) {
+        return res.status(400).json({
+          success: false,
+          error: "videoUrl must be a valid HTTP/HTTPS URL",
+        });
+      }
+      if (identityDocumentUrl && !urlPattern.test(identityDocumentUrl)) {
+        return res.status(400).json({
+          success: false,
+          error: "identityDocumentUrl must be a valid HTTP/HTTPS URL",
+        });
+      }
+
+      console.log(`📤 Received auth file URLs for user ${userId}:`, {
+        hasVideoUrl: !!videoUrl,
+        hasIdentityDocumentUrl: !!identityDocumentUrl,
+        userInfo,
+      });
+
+      // Send files to admins via auth bot
+      const sentCount = await authBot.sendAuthFilesToAllAdmins(
+        userId,
+        userInfo,
+        videoUrl,
+        identityDocumentUrl
+      );
+
+      console.log(`📊 Auth files sent to ${sentCount} admin(s)`);
+
+      return res.json({
+        success: true,
+        data: {
+          message: "Auth files submitted successfully",
+          recipients: sentCount,
+          userId,
+          filesReceived: {
+            video: !!videoUrl,
+            identityDocument: !!identityDocumentUrl,
+          },
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error("Error submitting auth files:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Internal server error",
+      });
     }
   }
 }

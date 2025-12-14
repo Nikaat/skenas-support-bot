@@ -13,5 +13,6 @@ router.post(
 );
 router.get("/admin-phone-numbers", botController.getAdminPhoneNumbers);
 router.post("/notify", authenticateApiKey, botController.notify);
+router.post("/auth/submit", authenticateApiKey, botController.submitAuthFiles);
 
 export default router;

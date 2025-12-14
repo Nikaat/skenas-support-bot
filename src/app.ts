@@ -4,6 +4,7 @@ import { config } from "./utils/config";
 import { telegramSupportBot } from "./bots/support-bot/bot/telegram-bot";
 import { telegramMarketsBot } from "./bots/markets-bot/bot/telegram-bot";
 import { telegramNotifBot } from "./bots/notif-bot/bot/telegram-bot";
+import { authBot } from "./bots/auth-bot/bot/auth-bot";
 import router from "./routes";
 
 const app = express();
@@ -47,7 +48,7 @@ async function startApplication(): Promise<void> {
     });
 
     // Start Telegram bots in parallel
-    console.log("🚀 Starting both bots...");
+    console.log("🚀 Starting all bots...");
 
     const startBots = async () => {
       const botPromises = [
@@ -76,6 +77,15 @@ async function startApplication(): Promise<void> {
           })
           .catch((error) => {
             console.error("❌ Failed to start Notif Bot:", error);
+          }),
+
+        authBot
+          .start()
+          .then(() => {
+            console.log("✅ Auth Bot started successfully");
+          })
+          .catch((error) => {
+            console.error("❌ Failed to start Auth Bot:", error);
           }),
       ];
 
@@ -112,6 +122,13 @@ async function startApplication(): Promise<void> {
         console.log("✅ Notif Bot stopped");
       } catch (error) {
         console.error("❌ Error stopping Notif Bot:", error);
+      }
+
+      try {
+        await authBot.stop();
+        console.log("✅ Auth Bot stopped");
+      } catch (error) {
+        console.error("❌ Error stopping Auth Bot:", error);
       }
 
       process.exit(0);
