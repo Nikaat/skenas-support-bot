@@ -7,6 +7,7 @@ import axios from "axios";
 import { config } from "../../../utils/config";
 import { authService } from "../services/auth.service";
 import { authStatusService } from "../services/auth-status.service";
+import { authDecisionService } from "../services/auth-decision.service";
 
 function normalizePhone(p: string): string {
   // Normalize to "+<country><number>" (E.164-ish)
@@ -281,6 +282,29 @@ export class AuthBot {
           return;
         }
 
+        // Check if this userId has already been processed by another admin
+        const existingDecision = await authDecisionService.getDecision(userId);
+        if (existingDecision) {
+          const existingEmoji =
+            existingDecision.status === "verified" ? "✅" : "❌";
+          const existingText =
+            existingDecision.status === "verified" ? "تایید شده" : "رد شده";
+
+          try {
+            await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+          } catch {}
+
+          await ctx.answerCbQuery("این درخواست قبلاً پردازش شده است");
+          await ctx.reply(
+            `${existingEmoji} این کاربر قبلاً ${existingText} است.\n` +
+              `👤 شناسه کاربر: <code>${existingDecision.userId}</code>\n` +
+              `📞 پردازش توسط: <code>${existingDecision.processedBy}</code>\n` +
+              `🕒 زمان: <code>${existingDecision.processedAt}</code>`,
+            { parse_mode: "HTML" }
+          );
+          return;
+        }
+
         // Update status in main app
         const success = await authStatusService.updateAuthStatus(
           userId,
@@ -288,6 +312,12 @@ export class AuthBot {
         );
 
         if (success) {
+          // Mark as processed so other admins can't change it
+          await authDecisionService.setDecision(
+            userId,
+            statusRaw as "verified" | "registering",
+            session.phoneNumber
+          );
           // Remove buttons from message
           try {
             await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
