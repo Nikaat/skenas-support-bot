@@ -336,6 +336,23 @@ export class AuthBot {
     }
   }
 
+  // ---------- Helper: Extract filename from URL ----------
+  private getFileNameFromUrl(url: string, fallback: string): string {
+    try {
+      const parsed = new URL(url);
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const lastSegment = parts[parts.length - 1];
+      if (!lastSegment) return fallback;
+
+      const decoded = decodeURIComponent(lastSegment);
+      // If no extension, use fallback
+      if (!decoded.includes(".")) return fallback;
+      return decoded;
+    } catch {
+      return fallback;
+    }
+  }
+
   // ---------- Send auth files to admins ----------
   public async sendAuthFilesToAllAdmins(
     userId: string,
@@ -403,9 +420,20 @@ export class AuthBot {
           // Send video if available
           if (videoBuffer) {
             try {
-              await this.bot.telegram.sendVideo(session.chatId, {
-                source: videoBuffer,
-              });
+              await this.bot.telegram.sendVideo(
+                session.chatId,
+                {
+                  source: videoBuffer,
+                  filename: this.getFileNameFromUrl(
+                    videoUrl as string,
+                    `${userId}-video.mp4`
+                  ),
+                },
+                {
+                  caption: `👤 شناسه کاربر: <code>${userId}</code>`,
+                  parse_mode: "HTML",
+                }
+              );
             } catch (error) {
               console.error(
                 `❌ Failed to send video to admin ${session.phoneNumber}:`,
@@ -417,9 +445,20 @@ export class AuthBot {
           // Send identity document if available
           if (identityDocumentBuffer) {
             try {
-              await this.bot.telegram.sendDocument(session.chatId, {
-                source: identityDocumentBuffer,
-              });
+              await this.bot.telegram.sendDocument(
+                session.chatId,
+                {
+                  source: identityDocumentBuffer,
+                  filename: this.getFileNameFromUrl(
+                    identityDocumentUrl as string,
+                    `${userId}-identity-doc`
+                  ),
+                },
+                {
+                  caption: `👤 شناسه کاربر: <code>${userId}</code>`,
+                  parse_mode: "HTML",
+                }
+              );
             } catch (error) {
               console.error(
                 `❌ Failed to send identity document to admin ${session.phoneNumber}:`,
