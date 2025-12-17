@@ -29,12 +29,12 @@ export class TelegramMarketsBot {
 
         await ctx.reply(
           "🤖 <b>Markets Bot Status</b>\n\n" +
-            `📊 <b>Status:</b> ${isRunning ? "🟢 Running" : "🔴 Stopped"}\n\n` +
-            `📢 <b>Markets Channel:</b> ${this.marketsChannelId}\n` +
-            `⏰ <b>Frequency:</b> Every 3 minutes\n\n` +
-            `📢 <b>Official Channel:</b> ${this.officialChannelId}\n` +
-            `⏰ <b>Frequency:</b> 1:30 PM daily\n\n` +
-            "This bot automatically sends market data to both channels.",
+          `📊 <b>Status:</b> ${isRunning ? "🟢 Running" : "🔴 Stopped"}\n\n` +
+          `📢 <b>Markets Channel:</b> ${this.marketsChannelId}\n` +
+          `⏰ <b>Frequency:</b> Every 3 minutes\n\n` +
+          `📢 <b>Official Channel:</b> ${this.officialChannelId}\n` +
+          `⏰ <b>Frequency:</b> 1:30 PM daily\n\n` +
+          "This bot automatically sends market data to both channels.",
           { parse_mode: "HTML" }
         );
       } catch (error) {
@@ -47,9 +47,9 @@ export class TelegramMarketsBot {
     this.bot.help((ctx) => {
       ctx.reply(
         "🤖 <b>Markets Bot Commands:</b>\n\n" +
-          "/status - Check bot status\n" +
-          "/help - Show this help message\n\n" +
-          "This bot automatically sends market data to the configured channel every minute.",
+        "/status - Check bot status\n" +
+        "/help - Show this help message\n\n" +
+        "This bot automatically sends market data to the configured channel every minute.",
         { parse_mode: "HTML" }
       );
     });
@@ -236,20 +236,19 @@ export class TelegramMarketsBot {
       timeZone: "Asia/Tehran",
     });
 
-    let message = "🌐 <b>به‌روزرسانی لحظه‌ای بازارها</b>\n";
-    message += `📅 ${persianDate} | ⏰ ${persianTime}\n\n`;
+    let message = `📅 ${persianDate} | ⏰ ${persianTime}\n\n`;
     message += "‏"; // RTL mark to ensure proper right-to-left alignment
 
     // Currency data with flags
     if (marketData.currency && marketData.currency.length > 0) {
-      message += "💵 <b>ارز</b>\n\n";
+      message += "<b>نرخ ارز</b>\n\n";
       marketData.currency.forEach((asset: any) => {
         const flag = this.getCurrencyFlag(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
           ? `${this.formatPrice(
-              parseFloat(asset.cprice).toFixed(2)
-            )} ${this.formatUnit(asset.unit)}`
+            parseFloat(asset.cprice).toFixed(2)
+          )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `‏${flag} ${name}: ${price}\n`;
@@ -259,14 +258,14 @@ export class TelegramMarketsBot {
 
     // Gold data
     if (marketData.gold && marketData.gold.length > 0) {
-      message += "💰 <b>طلا و نقره</b>\n\n";
+      message += "<b>طلا و نقره</b>\n\n";
       marketData.gold.forEach((asset: any) => {
         // const emoji = this.getGoldEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
           ? `${this.formatPrice(
-              parseFloat(asset.cprice).toFixed(2)
-            )} ${this.formatUnit(asset.unit)}`
+            parseFloat(asset.cprice).toFixed(2)
+          )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
 
@@ -275,14 +274,14 @@ export class TelegramMarketsBot {
           ? `<a href="${config.skenas.baseUrl}/investment/gold-silver/${asset.symbol}">${name}</a>`
           : name;
 
-        message += `‏ ${displayName}: ${price}\n`;
+        message += `‏ 💰 ${displayName}: ${price}\n`;
       });
       message += "\n";
     }
 
     // Crypto data
     if (marketData.crypto && marketData.crypto.length > 0) {
-      message += "💸 <b>ارز دیجیتال</b>\n\n";
+      message += "<b>ارز دیجیتال</b>\n\n";
       marketData.crypto.forEach((asset: any) => {
         // const emoji = this.getCryptoEmoji(asset.symbol);
         const name = asset.name || asset.fullname || asset.symbol;
@@ -293,19 +292,24 @@ export class TelegramMarketsBot {
 
         // Make name a link if tradable
         const displayName = asset.tradable
-          ? `<a href="${
-              config.skenas.baseUrl
-            }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
+          ? `<a href="${config.skenas.baseUrl
+          }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
           : name;
 
-        message += ` ${displayName}: ${price}\n`;
+        message += `‏ 🔸 ${displayName}: ${price}\n`;
       });
     }
 
     // Add footer link
     message += "\n\n";
-    message += `<a href="${config.skenas.baseUrl}">💰 خرید و فروش امن و مطمئن با اسکناس</a>`;
+    message += `<a href="${config.skenas.baseUrl}">✨ شروع سرمایه‌گذاری از ۱۰۰٬۰۰۰ تومان  تنها در اسکناس/a>`;
+    message += `\n\n <b>📲 دانلود اپلیکیشن از:</b>`;
+    message += `\n <a href="https://cafebazaar.ir/app/?id=com.project.android.skenas&ref=share">کافه بازار</a> | <a href="https://myket.ir/app/com.project.android.skenas">مایکت</a> | <a href="https://app.skenas.io/home">نسخه وب‌اپ</a>`;
+    message += `\n\n <a href="https://t.me/skenasapp">💬 پشتیبانی ۲۴ ساعته و دریافت مشاوره سرمایه‌گذاری آنلاین</a>`;
     message += `\n\n🔗 @skenasio`;
+    message += `\n<a href="https://skenas.io">🌐 https://skenas.io</a>`;
+    message += `\n☎ ۰۲۱۹۱۰۷۹۱۳۷`;
+
 
     return message;
   }
