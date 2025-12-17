@@ -286,12 +286,11 @@ export class AuthBot {
     requestId: string,
     userId: string
   ): InlineKeyboardMarkup {
-    const buttons = this.REJECTION_REASONS.map((reason) => [
+    // Use index instead of full reason text to stay under 64-byte limit
+    const buttons = this.REJECTION_REASONS.map((reason, index) => [
       {
         text: reason,
-        callback_data: `auth:reason:${requestId}:${userId}:${encodeURIComponent(
-          reason
-        )}`,
+        callback_data: `auth:reason:${requestId}:${userId}:${index}`,
       },
     ]);
 
@@ -321,14 +320,22 @@ export class AuthBot {
 
       // Handle rejection reason selection
       if (data.startsWith("auth:reason:")) {
-        // format: auth:reason:<requestId>:<userId>:<encodedReason>
-        const [, , requestId, userId, encodedReason] = data.split(":");
-        const reason = decodeURIComponent(encodedReason);
+        // format: auth:reason:<requestId>:<userId>:<reasonIndex>
+        const [, , requestId, userId, reasonIndexStr] = data.split(":");
+        const reasonIndex = parseInt(reasonIndexStr, 10);
 
-        if (!requestId || !userId || !reason) {
+        if (
+          !requestId ||
+          !userId ||
+          isNaN(reasonIndex) ||
+          reasonIndex < 0 ||
+          reasonIndex >= this.REJECTION_REASONS.length
+        ) {
           await ctx.answerCbQuery("داده نامعتبر است");
           return;
         }
+
+        const reason = this.REJECTION_REASONS[reasonIndex];
 
         // Check if this requestId has already been processed
         const existingDecision = await authDecisionService.getDecision(
