@@ -308,7 +308,7 @@ export class TelegramMarketsBot {
     message += `\n\n <a href="https://t.me/skenasapp">💬 پشتیبانی ۲۴ ساعته و دریافت مشاوره سرمایه‌گذاری آنلاین</a>`;
     message += `\n\n🔗 @skenasio`;
     message += `\n<a href="https://skenas.io">🌐 https://skenas.io</a>`;
-    message += `\n☎ ۰۲۱۹۱۰۷۹۱۳۷`;
+    message += `\n☎️ ۰۲۱۹۱۰۷۹۱۳۷`;
 
 
     return message;
