@@ -225,9 +225,8 @@ export class TelegramMarketsBot {
     // Persian date and time formatting
     const now = new Date();
     const persianDate = now.toLocaleDateString("fa-IR", {
-      weekday: "long",
       year: "numeric",
-      month: "long",
+      month: "numeric",
       day: "numeric",
     });
     const persianTime = now.toLocaleTimeString("fa-IR", {
@@ -378,7 +377,8 @@ export class TelegramMarketsBot {
     try {
       await this.bot.telegram.sendMessage(channelId, message, {
         parse_mode: "HTML",
-      });
+        disable_web_page_preview: true,
+      } as any);
       console.log(`✅ Market data sent to channel: ${channelId}`);
     } catch (error) {
       console.error(
