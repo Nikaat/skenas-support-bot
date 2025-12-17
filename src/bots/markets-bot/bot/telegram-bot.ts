@@ -236,7 +236,8 @@ export class TelegramMarketsBot {
       timeZone: "Asia/Tehran",
     });
 
-    let message = `📅 ${persianDate} | ⏰ ${persianTime}\n\n`;
+    let message = "🔔 اسکناس؛ پلتفرم آنلاین سرمایه‌گذاری با مبالغ خرد و کلان\n\n";
+    message += `📅 تاریخ: ${persianDate} | ⏰ ساعت: ${persianTime}\n\n`;
     message += "‏"; // RTL mark to ensure proper right-to-left alignment
 
     // Currency data with flags
