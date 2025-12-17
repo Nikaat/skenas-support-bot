@@ -231,17 +231,20 @@ export class AuthBot {
   }
 
   // ---------- Inline keyboard for auth requests ----------
-  private buildAuthInlineKeyboard(userId: string): InlineKeyboardMarkup {
+  private buildAuthInlineKeyboard(
+    userId: string,
+    requestId: string
+  ): InlineKeyboardMarkup {
     return {
       inline_keyboard: [
         [
           {
             text: "✅ تایید",
-            callback_data: `auth:verified:${userId}`,
+            callback_data: `auth:verified:${requestId}:${userId}`,
           },
           {
             text: "❌ رد",
-            callback_data: `auth:registering:${userId}`,
+            callback_data: `auth:registering:${requestId}:${userId}`,
           },
         ],
       ],
@@ -269,10 +272,10 @@ export class AuthBot {
 
       // Handle auth status callbacks
       if (data.startsWith("auth:")) {
-        // format: auth:<status>:<userId>
-        const [, statusRaw, userId] = data.split(":");
+        // format: auth:<status>:<requestId>:<userId>
+        const [, statusRaw, requestId, userId] = data.split(":");
 
-        if (!statusRaw || !userId) {
+        if (!statusRaw || !requestId || !userId) {
           await ctx.answerCbQuery("داده نامعتبر است");
           return;
         }
@@ -282,8 +285,10 @@ export class AuthBot {
           return;
         }
 
-        // Check if this userId has already been processed by another admin
-        const existingDecision = await authDecisionService.getDecision(userId);
+        // Check if this requestId has already been processed by another admin
+        const existingDecision = await authDecisionService.getDecision(
+          requestId
+        );
         if (existingDecision) {
           const existingEmoji =
             existingDecision.status === "verified" ? "✅" : "❌";
@@ -296,8 +301,9 @@ export class AuthBot {
 
           await ctx.answerCbQuery("این درخواست قبلاً پردازش شده است");
           await ctx.reply(
-            `${existingEmoji} این کاربر قبلاً ${existingText} است.\n` +
+            `${existingEmoji} این درخواست قبلاً ${existingText} است.\n` +
               `👤 شناسه کاربر: <code>${existingDecision.userId}</code>\n` +
+              `🆔 شناسه درخواست: <code>${existingDecision.requestId}</code>\n` +
               `📞 پردازش توسط: <code>${existingDecision.processedBy}</code>\n` +
               `🕒 زمان: <code>${existingDecision.processedAt}</code>`,
             { parse_mode: "HTML" }
@@ -314,6 +320,7 @@ export class AuthBot {
         if (success) {
           // Mark as processed so other admins can't change it
           await authDecisionService.setDecision(
+            requestId,
             userId,
             statusRaw as "verified" | "registering",
             session.phoneNumber
@@ -383,6 +390,13 @@ export class AuthBot {
     }
   }
 
+  // ---------- Helper: Generate unique request ID ----------
+  private generateRequestId(userId: string): string {
+    return `auth-${userId}-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+  }
+
   // ---------- Send auth files to admins ----------
   public async sendAuthFilesToAllAdmins(
     userId: string,
@@ -407,6 +421,10 @@ export class AuthBot {
       }
 
       let sentCount = 0;
+
+      // Generate unique requestId for this auth request
+      const requestId = this.generateRequestId(userId);
+      console.log(`🆔 Generated requestId: ${requestId} for userId: ${userId}`);
 
       // Download files from URLs (only once, reuse for all admins)
       console.log("📥 Downloading files from URLs...");
@@ -444,7 +462,7 @@ export class AuthBot {
           // Send message with user info and action buttons
           await this.bot.telegram.sendMessage(session.chatId, userInfoText, {
             parse_mode: "HTML",
-            reply_markup: this.buildAuthInlineKeyboard(userId),
+            reply_markup: this.buildAuthInlineKeyboard(userId, requestId),
           });
 
           // Send video if available

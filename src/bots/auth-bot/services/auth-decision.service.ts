@@ -3,6 +3,7 @@ import redis from "../../../utils/redis";
 export type AuthDecisionStatus = "verified" | "registering";
 
 export interface IAuthDecision {
+  requestId: string;
   userId: string;
   status: AuthDecisionStatus;
   processedBy: string; // admin phone number
@@ -12,12 +13,12 @@ export interface IAuthDecision {
 const DECISION_PREFIX = "auth_decision:";
 
 class AuthDecisionService {
-  private getKey(userId: string): string {
-    return `${DECISION_PREFIX}${userId}`;
+  private getKey(requestId: string): string {
+    return `${DECISION_PREFIX}${requestId}`;
   }
 
-  async getDecision(userId: string): Promise<IAuthDecision | null> {
-    const key = this.getKey(userId);
+  async getDecision(requestId: string): Promise<IAuthDecision | null> {
+    const key = this.getKey(requestId);
     const raw = await redis.get(key);
     if (!raw) return null;
 
@@ -31,12 +32,14 @@ class AuthDecisionService {
   }
 
   async setDecision(
+    requestId: string,
     userId: string,
     status: AuthDecisionStatus,
     processedBy: string
   ): Promise<void> {
-    const key = this.getKey(userId);
+    const key = this.getKey(requestId);
     const decision: IAuthDecision = {
+      requestId,
       userId,
       status,
       processedBy,
@@ -44,6 +47,11 @@ class AuthDecisionService {
     };
 
     await redis.set(key, JSON.stringify(decision));
+  }
+
+  async clearDecision(requestId: string): Promise<void> {
+    const key = this.getKey(requestId);
+    await redis.del(key);
   }
 }
 
