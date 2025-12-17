@@ -391,8 +391,11 @@ export class AuthBot {
   }
 
   // ---------- Helper: Generate unique request ID ----------
-  private generateRequestId(userId: string): string {
-    return `auth-${userId}-${Date.now().toString(36)}-${Math.random()
+  // Generate short requestId to fit Telegram's 64-byte callback_data limit
+  private generateRequestId(): string {
+    // Format: timestamp (base36, ~8 chars) + random (base36, 6 chars) = ~14 chars
+    // This keeps callback_data well under 64 bytes even with userId
+    return `${Date.now().toString(36)}${Math.random()
       .toString(36)
       .slice(2, 8)}`;
   }
@@ -422,8 +425,8 @@ export class AuthBot {
 
       let sentCount = 0;
 
-      // Generate unique requestId for this auth request
-      const requestId = this.generateRequestId(userId);
+      // Generate unique requestId for this auth request (short format for Telegram limits)
+      const requestId = this.generateRequestId();
       console.log(`🆔 Generated requestId: ${requestId} for userId: ${userId}`);
 
       // Download files from URLs (only once, reuse for all admins)
