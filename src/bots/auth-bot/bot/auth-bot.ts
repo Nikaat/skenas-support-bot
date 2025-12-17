@@ -376,13 +376,15 @@ export class AuthBot {
       ];
     });
 
-    // Add "سایر" (Other) button for custom reason
-    buttons.push([
-      {
-        text: "📝 سایر",
-        callback_data: `auth:custom:${requestId}:${userId}`,
-      },
-    ]);
+    // Add "سایر" (Other) button only on the last page
+    if (currentPage === totalPages - 1) {
+      buttons.push([
+        {
+          text: "📝 سایر",
+          callback_data: `auth:custom:${requestId}:${userId}`,
+        },
+      ]);
+    }
 
     // Add navigation row if needed
     const navigationRow: any[] = [];
