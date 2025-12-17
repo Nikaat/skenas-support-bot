@@ -1,7 +1,7 @@
 import redis from "../../../utils/redis";
 
 export type PendingAuthAction = {
-  kind: "auth_reject";
+  kind: "auth_reject" | "auth_custom_reason";
   requestId: string;
   userId: string;
   status: "registering";

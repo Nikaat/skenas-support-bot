@@ -218,6 +218,74 @@ export class AuthBot {
         return;
       }
 
+      // Check for pending custom reason input
+      const pendingAction = await pendingAuthActionService.get(
+        chatId.toString()
+      );
+      if (pendingAction && pendingAction.kind === "auth_custom_reason") {
+        const customReason = text?.trim() || "";
+
+        // Validate: max 3 words
+        const words = customReason.split(/\s+/).filter((w) => w.length > 0);
+        if (words.length === 0) {
+          await ctx.reply(
+            "❌ لطفاً دلیل رد را وارد کنید.\n" + "⚠️ حداکثر ۳ کلمه"
+          );
+          return;
+        }
+
+        if (words.length > 3) {
+          await ctx.reply(
+            "❌ دلیل رد باید حداکثر ۳ کلمه باشد.\n\n" +
+              `شما ${words.length} کلمه وارد کرده‌اید. لطفاً کوتاه‌تر کنید.`
+          );
+          return;
+        }
+
+        // Check if this requestId has already been processed
+        const existingDecision = await authDecisionService.getDecision(
+          pendingAction.requestId
+        );
+        if (existingDecision) {
+          await pendingAuthActionService.clear(chatId.toString());
+          await ctx.reply("این درخواست قبلاً پردازش شده است.");
+          return;
+        }
+
+        // Update status in main app with custom reason
+        const success = await authStatusService.updateAuthStatus(
+          pendingAction.userId,
+          "registering",
+          customReason
+        );
+
+        if (success) {
+          // Mark as processed
+          await authDecisionService.setDecision(
+            pendingAction.requestId,
+            pendingAction.userId,
+            "registering",
+            session.phoneNumber
+          );
+
+          // Clear pending action
+          await pendingAuthActionService.clear(chatId.toString());
+
+          await ctx.reply(
+            `❌ <b>درخواست رد شد</b>\n\n` +
+              `👤 شناسه کاربر: <code>${pendingAction.userId}</code>\n` +
+              `📌 وضعیت: <b>رد شده</b>\n` +
+              `📝 دلیل: <b>${customReason}</b>`,
+            { parse_mode: "HTML" }
+          );
+        } else {
+          await ctx.reply(
+            `❌ به‌روزرسانی وضعیت ناموفق بود. لطفاً دوباره تلاش کنید.`
+          );
+        }
+        return;
+      }
+
       // No pending action → provide guidance
       await ctx.reply(
         "💡 می‌توانید از دستورات زیر استفاده کنید:\n\n" +
@@ -282,17 +350,60 @@ export class AuthBot {
   }
 
   // ---------- Inline keyboard for rejection reasons ----------
+  private readonly REASONS_PER_PAGE = 6;
+
   private buildRejectionReasonKeyboard(
     requestId: string,
-    userId: string
+    userId: string,
+    page: number = 0
   ): InlineKeyboardMarkup {
-    // Use index instead of full reason text to stay under 64-byte limit
-    const buttons = this.REJECTION_REASONS.map((reason, index) => [
+    const totalReasons = this.REJECTION_REASONS.length;
+    const totalPages = Math.ceil(totalReasons / this.REASONS_PER_PAGE);
+    const currentPage = Math.max(0, Math.min(page, totalPages - 1));
+
+    const startIndex = currentPage * this.REASONS_PER_PAGE;
+    const endIndex = Math.min(startIndex + this.REASONS_PER_PAGE, totalReasons);
+    const reasonsForPage = this.REJECTION_REASONS.slice(startIndex, endIndex);
+
+    // Build reason buttons for current page
+    const buttons = reasonsForPage.map((reason, localIndex) => {
+      const globalIndex = startIndex + localIndex;
+      return [
+        {
+          text: reason,
+          callback_data: `auth:reason:${requestId}:${userId}:${globalIndex}`,
+        },
+      ];
+    });
+
+    // Add "سایر" (Other) button for custom reason
+    buttons.push([
       {
-        text: reason,
-        callback_data: `auth:reason:${requestId}:${userId}:${index}`,
+        text: "📝 سایر",
+        callback_data: `auth:custom:${requestId}:${userId}`,
       },
     ]);
+
+    // Add navigation row if needed
+    const navigationRow: any[] = [];
+    if (totalPages > 1) {
+      if (currentPage > 0) {
+        navigationRow.push({
+          text: "⬅️ قبلی",
+          callback_data: `auth:page:${requestId}:${userId}:${currentPage - 1}`,
+        });
+      }
+      if (currentPage < totalPages - 1) {
+        navigationRow.push({
+          text: "➡️ بعدی",
+          callback_data: `auth:page:${requestId}:${userId}:${currentPage + 1}`,
+        });
+      }
+    }
+
+    if (navigationRow.length > 0) {
+      buttons.push(navigationRow);
+    }
 
     return {
       inline_keyboard: buttons,
@@ -315,6 +426,81 @@ export class AuthBot {
       const data: string | undefined = cq && "data" in cq ? cq.data : undefined;
       if (!data) {
         await ctx.answerCbQuery();
+        return;
+      }
+
+      // Handle custom reason selection
+      if (data.startsWith("auth:custom:")) {
+        // format: auth:custom:<requestId>:<userId>
+        const [, , requestId, userId] = data.split(":");
+
+        if (!requestId || !userId) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        // Check if this requestId has already been processed
+        const existingDecision = await authDecisionService.getDecision(
+          requestId
+        );
+        if (existingDecision) {
+          await ctx.answerCbQuery("این درخواست قبلاً پردازش شده است");
+          return;
+        }
+
+        // Store pending action for custom reason
+        await pendingAuthActionService.set(chatId.toString(), {
+          kind: "auth_custom_reason",
+          requestId,
+          userId,
+          status: "registering",
+        });
+
+        // Remove buttons and ask for custom reason
+        try {
+          await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+        } catch {}
+
+        await ctx.answerCbQuery("لطفاً دلیل را وارد کنید");
+        await ctx.reply(
+          `📝 <b>دلیل سفارشی</b>\n\n` +
+            `👤 شناسه کاربر: <code>${userId}</code>\n\n` +
+            `لطفاً دلیل رد درخواست را وارد کنید:\n` +
+            `⚠️ <i>حداکثر ۳ کلمه</i>`,
+          { parse_mode: "HTML" }
+        );
+        return;
+      }
+
+      // Handle pagination for rejection reasons
+      if (data.startsWith("auth:page:")) {
+        // format: auth:page:<requestId>:<userId>:<pageNumber>
+        const [, , requestId, userId, pageStr] = data.split(":");
+        const page = parseInt(pageStr, 10);
+
+        if (!requestId || !userId || isNaN(page) || page < 0) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        // Check if this requestId has already been processed
+        const existingDecision = await authDecisionService.getDecision(
+          requestId
+        );
+        if (existingDecision) {
+          await ctx.answerCbQuery("این درخواست قبلاً پردازش شده است");
+          return;
+        }
+
+        // Update the keyboard with the new page
+        try {
+          await ctx.editMessageReplyMarkup(
+            this.buildRejectionReasonKeyboard(requestId, userId, page)
+          );
+          await ctx.answerCbQuery();
+        } catch (error) {
+          await ctx.answerCbQuery("خطا در تغییر صفحه");
+        }
         return;
       }
 
@@ -486,7 +672,8 @@ export class AuthBot {
               parse_mode: "HTML",
               reply_markup: this.buildRejectionReasonKeyboard(
                 requestId,
-                userId
+                userId,
+                0
               ),
             }
           );
