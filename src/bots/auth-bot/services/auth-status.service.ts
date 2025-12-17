@@ -21,10 +21,12 @@ export class AuthStatusService {
    * Update auth status in the main application
    * @param userId - User ID
    * @param status - Status: "verified" for success, "registering" for rejected
+   * @param reason - Optional rejection reason (required when status is "registering")
    */
   async updateAuthStatus(
     userId: string,
-    status: "verified" | "registering"
+    status: "verified" | "registering",
+    reason?: string
   ): Promise<boolean> {
     try {
       if (!this.apiKey) {
@@ -46,12 +48,23 @@ export class AuthStatusService {
         return false;
       }
 
+      if (status === "registering" && !reason) {
+        console.error("Reason is required when status is 'registering'");
+        return false;
+      }
+
+      const payload: { userId: string; status: string; reason?: string } = {
+        userId,
+        status,
+      };
+
+      if (reason) {
+        payload.reason = reason;
+      }
+
       const { data } = await axios.post(
         `https://apitest.skenas.io/api/telegram-bot/auth/update-status`,
-        {
-          userId,
-          status,
-        },
+        payload,
         {
           headers: {
             "Content-Type": "application/json",

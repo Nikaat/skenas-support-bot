@@ -8,6 +8,7 @@ import { config } from "../../../utils/config";
 import { authService } from "../services/auth.service";
 import { authStatusService } from "../services/auth-status.service";
 import { authDecisionService } from "../services/auth-decision.service";
+import { pendingAuthActionService } from "../services/pending-auth-action.service";
 
 function normalizePhone(p: string): string {
   // Normalize to "+<country><number>" (E.164-ish)
@@ -230,6 +231,35 @@ export class AuthBot {
     }
   }
 
+  // ---------- Rejection reasons (max 3 words each) ----------
+  private readonly REJECTION_REASONS = [
+    "مدرک هویتی نامعتبر",
+    "ویدیو نامعتبر",
+    "اطلاعات ناقص",
+    "عدم تطابق اطلاعات",
+    "مدرک غیرقابل خواندن",
+    "ویدیو غیرقابل مشاهده",
+    "تکرار درخواست",
+    "مدرک منقضی شده",
+    "مدرک جعلی",
+    "ویدیو کوتاه",
+    "ویدیو تار",
+    "عدم تطابق چهره",
+    "کد ملی نامعتبر",
+    "تاریخ تولد نامعتبر",
+    "نام نامعتبر",
+    "مدرک قدیمی",
+    "ویدیو بدون صدا",
+    "مدرک آسیب دیده",
+    "اطلاعات نادرست",
+    "مدرک غیرواضح",
+    "ویدیو نامرتبط",
+    "مدرک ناقص",
+    "ویدیو ناقص",
+    "عدم تطابق مدرک",
+    "مدرک تکراری",
+  ];
+
   // ---------- Inline keyboard for auth requests ----------
   private buildAuthInlineKeyboard(
     userId: string,
@@ -244,10 +274,29 @@ export class AuthBot {
           },
           {
             text: "❌ رد",
-            callback_data: `auth:registering:${requestId}:${userId}`,
+            callback_data: `auth:reject:${requestId}:${userId}`,
           },
         ],
       ],
+    };
+  }
+
+  // ---------- Inline keyboard for rejection reasons ----------
+  private buildRejectionReasonKeyboard(
+    requestId: string,
+    userId: string
+  ): InlineKeyboardMarkup {
+    const buttons = this.REJECTION_REASONS.map((reason) => [
+      {
+        text: reason,
+        callback_data: `auth:reason:${requestId}:${userId}:${encodeURIComponent(
+          reason
+        )}`,
+      },
+    ]);
+
+    return {
+      inline_keyboard: buttons,
     };
   }
 
@@ -270,6 +319,67 @@ export class AuthBot {
         return;
       }
 
+      // Handle rejection reason selection
+      if (data.startsWith("auth:reason:")) {
+        // format: auth:reason:<requestId>:<userId>:<encodedReason>
+        const [, , requestId, userId, encodedReason] = data.split(":");
+        const reason = decodeURIComponent(encodedReason);
+
+        if (!requestId || !userId || !reason) {
+          await ctx.answerCbQuery("داده نامعتبر است");
+          return;
+        }
+
+        // Check if this requestId has already been processed
+        const existingDecision = await authDecisionService.getDecision(
+          requestId
+        );
+        if (existingDecision) {
+          await ctx.answerCbQuery("این درخواست قبلاً پردازش شده است");
+          return;
+        }
+
+        // Update status in main app with reason
+        const success = await authStatusService.updateAuthStatus(
+          userId,
+          "registering",
+          reason
+        );
+
+        if (success) {
+          // Mark as processed
+          await authDecisionService.setDecision(
+            requestId,
+            userId,
+            "registering",
+            session.phoneNumber
+          );
+
+          // Clear pending action
+          await pendingAuthActionService.clear(chatId.toString());
+
+          // Remove buttons from message
+          try {
+            await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+          } catch {}
+
+          await ctx.answerCbQuery("رد شد");
+          await ctx.reply(
+            `❌ <b>درخواست رد شد</b>\n\n` +
+              `👤 شناسه کاربر: <code>${userId}</code>\n` +
+              `📌 وضعیت: <b>رد شده</b>\n` +
+              `📝 دلیل: <b>${reason}</b>`,
+            { parse_mode: "HTML" }
+          );
+        } else {
+          await ctx.answerCbQuery("خطا در به‌روزرسانی وضعیت");
+          await ctx.reply(
+            `❌ به‌روزرسانی وضعیت ناموفق بود. لطفاً دوباره تلاش کنید.`
+          );
+        }
+        return;
+      }
+
       // Handle auth status callbacks
       if (data.startsWith("auth:")) {
         // format: auth:<status>:<requestId>:<userId>
@@ -277,11 +387,6 @@ export class AuthBot {
 
         if (!statusRaw || !requestId || !userId) {
           await ctx.answerCbQuery("داده نامعتبر است");
-          return;
-        }
-
-        if (statusRaw !== "verified" && statusRaw !== "registering") {
-          await ctx.answerCbQuery("وضعیت نامعتبر است");
           return;
         }
 
@@ -311,41 +416,77 @@ export class AuthBot {
           return;
         }
 
-        // Update status in main app
-        const success = await authStatusService.updateAuthStatus(
-          userId,
-          statusRaw as "verified" | "registering"
-        );
+        // Handle verified (approve) - proceed immediately
+        if (statusRaw === "verified") {
+          const success = await authStatusService.updateAuthStatus(
+            userId,
+            "verified"
+          );
 
-        if (success) {
-          // Mark as processed so other admins can't change it
-          await authDecisionService.setDecision(
+          if (success) {
+            // Mark as processed
+            await authDecisionService.setDecision(
+              requestId,
+              userId,
+              "verified",
+              session.phoneNumber
+            );
+
+            // Remove buttons from message
+            try {
+              await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+            } catch {}
+
+            await ctx.answerCbQuery("تایید شد");
+            await ctx.reply(
+              `✅ <b>وضعیت به‌روزرسانی شد</b>\n\n` +
+                `👤 شناسه کاربر: <code>${userId}</code>\n` +
+                `📌 وضعیت: <b>تایید شد</b>`,
+              { parse_mode: "HTML" }
+            );
+          } else {
+            await ctx.answerCbQuery("خطا در به‌روزرسانی وضعیت");
+            await ctx.reply(
+              `❌ به‌روزرسانی وضعیت ناموفق بود. لطفاً دوباره تلاش کنید.`
+            );
+          }
+          return;
+        }
+
+        // Handle reject - show reason selection
+        if (statusRaw === "reject") {
+          // Store pending action
+          await pendingAuthActionService.set(chatId.toString(), {
+            kind: "auth_reject",
             requestId,
             userId,
-            statusRaw as "verified" | "registering",
-            session.phoneNumber
-          );
-          // Remove buttons from message
+            status: "registering",
+          });
+
+          // Remove original buttons and show reason selection
           try {
-            await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
+            await ctx.editMessageReplyMarkup({
+              inline_keyboard: [],
+            });
           } catch {}
 
-          const statusText = statusRaw === "verified" ? "تایید شد" : "رد شد";
-          const statusEmoji = statusRaw === "verified" ? "✅" : "❌";
-
-          await ctx.answerCbQuery(`${statusEmoji} ${statusText}`);
+          await ctx.answerCbQuery("لطفاً دلیل رد را انتخاب کنید");
           await ctx.reply(
-            `${statusEmoji} <b>وضعیت به‌روزرسانی شد</b>\n\n` +
-              `👤 شناسه کاربر: <code>${userId}</code>\n` +
-              `📌 وضعیت: <b>${statusText}</b>`,
-            { parse_mode: "HTML" }
+            `❌ <b>رد درخواست</b>\n\n` +
+              `👤 شناسه کاربر: <code>${userId}</code>\n\n` +
+              `لطفاً دلیل رد درخواست را انتخاب کنید:`,
+            {
+              parse_mode: "HTML",
+              reply_markup: this.buildRejectionReasonKeyboard(
+                requestId,
+                userId
+              ),
+            }
           );
-        } else {
-          await ctx.answerCbQuery("خطا در به‌روزرسانی وضعیت");
-          await ctx.reply(
-            `❌ به‌روزرسانی وضعیت ناموفق بود. لطفاً دوباره تلاش کنید.`
-          );
+          return;
         }
+
+        await ctx.answerCbQuery("وضعیت نامعتبر است");
         return;
       }
 
