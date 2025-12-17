@@ -302,7 +302,7 @@ export class TelegramMarketsBot {
 
     // Add footer link
     message += "\n\n";
-    message += `<a href="${config.skenas.baseUrl}">✨ شروع سرمایه‌گذاری از ۱۰۰٬۰۰۰ تومان  تنها در اسکناس/a>`;
+    message += `<a href="${config.skenas.baseUrl}">✨ شروع سرمایه‌گذاری از ۱۰۰٬۰۰۰ تومان  تنها در اسکناس</a>`;
     message += `\n\n <b>📲 دانلود اپلیکیشن از:</b>`;
     message += `\n <a href="https://cafebazaar.ir/app/?id=com.project.android.skenas&ref=share">کافه بازار</a> | <a href="https://myket.ir/app/com.project.android.skenas">مایکت</a> | <a href="https://app.skenas.io/home">نسخه وب‌اپ</a>`;
     message += `\n\n <a href="https://t.me/skenasapp">💬 پشتیبانی ۲۴ ساعته و دریافت مشاوره سرمایه‌گذاری آنلاین</a>`;
