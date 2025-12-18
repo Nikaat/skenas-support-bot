@@ -63,7 +63,7 @@ export class AuthStatusService {
       }
 
       const { data } = await axios.post(
-        `https://apitest.skenas.io/api/telegram-bot/auth/update-status`,
+        `${config.skenas.apiBaseUrl}/api/telegram-bot/auth/update-status`,
         payload,
         {
           headers: {
