@@ -29,20 +29,11 @@ export class MarketsService {
 
   // Specific symbols to fetch for each asset type
   private readonly targetSymbols = {
-    currency: ["USD", "EUR", "GBP", "AED", "TRY", "CNY", "RUB", "IQD"],
+    currency: ["USD", "EUR", "AED"],
     crypto: [
       "BTC",
       "ETH",
-      "USDT",
       "DOGE",
-      "BNB",
-      "SOL",
-      "TRX",
-      "XRP",
-      "SHIB",
-      "DOT",
-      "LTC",
-      "CAKE",
     ],
     gold: [
       "IRTICHGOLD01",
@@ -50,9 +41,7 @@ export class MarketsService {
       "GERAM18",
       "SEKEE_EMAMI",
       "NIM",
-      "ROB",
-      "GERAMI",
-      "ONS",
+      "ROB"
     ],
   };
 
