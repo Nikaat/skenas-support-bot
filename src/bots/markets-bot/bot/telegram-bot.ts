@@ -2,20 +2,26 @@ import { Telegraf, Context } from "telegraf";
 import { config } from "../../../utils/config";
 import { marketsService } from "../services/markets.service";
 import redis from "../../../utils/redis";
+import { generateImageBuffer } from "../services/image-renderer.service";
+import * as fs from "fs";
+import * as path from "path";
 
 export class TelegramMarketsBot {
   private bot: Telegraf<Context>;
   private isRunning: boolean = false;
   private marketsChannelId: string;
+  private marketsImageChannelId: string;
   private officialChannelId: string;
 
   // Schedulers
   private marketsIntervalId: NodeJS.Timeout | null = null;
+  private marketsImageIntervalId: NodeJS.Timeout | null = null;
   private officialIntervalId: NodeJS.Timeout | null = null;
 
   constructor() {
     this.bot = new Telegraf(config.telegram.marketsBotToken);
     this.marketsChannelId = config.telegram.marketsChannelId;
+    this.marketsImageChannelId = config.telegram.marketsImageChannelId;
     this.officialChannelId = config.telegram.officialChannelId;
     this.setupCommands();
     this.setupErrorHandling();
@@ -29,12 +35,12 @@ export class TelegramMarketsBot {
 
         await ctx.reply(
           "🤖 <b>Markets Bot Status</b>\n\n" +
-          `📊 <b>Status:</b> ${isRunning ? "🟢 Running" : "🔴 Stopped"}\n\n` +
-          `📢 <b>Markets Channel:</b> ${this.marketsChannelId}\n` +
-          `⏰ <b>Frequency:</b> Every 3 minutes\n\n` +
-          `📢 <b>Official Channel:</b> ${this.officialChannelId}\n` +
-          `⏰ <b>Frequency:</b> 1:30 PM daily\n\n` +
-          "This bot automatically sends market data to both channels.",
+            `📊 <b>Status:</b> ${isRunning ? "🟢 Running" : "🔴 Stopped"}\n\n` +
+            `📢 <b>Markets Channel:</b> ${this.marketsChannelId}\n` +
+            `⏰ <b>Frequency:</b> Every 3 minutes\n\n` +
+            `📢 <b>Official Channel:</b> ${this.officialChannelId}\n` +
+            `⏰ <b>Frequency:</b> 1:30 PM daily\n\n` +
+            "This bot automatically sends market data to both channels.",
           { parse_mode: "HTML" }
         );
       } catch (error) {
@@ -47,9 +53,9 @@ export class TelegramMarketsBot {
     this.bot.help((ctx) => {
       ctx.reply(
         "🤖 <b>Markets Bot Commands:</b>\n\n" +
-        "/status - Check bot status\n" +
-        "/help - Show this help message\n\n" +
-        "This bot automatically sends market data to the configured channel every minute.",
+          "/status - Check bot status\n" +
+          "/help - Show this help message\n\n" +
+          "This bot automatically sends market data to the configured channel every minute.",
         { parse_mode: "HTML" }
       );
     });
@@ -69,6 +75,24 @@ export class TelegramMarketsBot {
     } catch (error) {
       console.error("❌ Error getting lastOfficialSent from Redis:", error);
       return null;
+    }
+  }
+
+  private async getLastMarketsImageSent(): Promise<Date | null> {
+    try {
+      const timestamp = await redis.get("lastMarketsImageSent");
+      return timestamp ? new Date(parseInt(timestamp)) : null;
+    } catch (error) {
+      console.error("❌ Error getting lastMarketsImageSent from Redis:", error);
+      return null;
+    }
+  }
+
+  private async setLastMarketsImageSent(date: Date): Promise<void> {
+    try {
+      await redis.set("lastMarketsImageSent", date.getTime().toString());
+    } catch (error) {
+      console.error("❌ Error setting lastMarketsImageSent in Redis:", error);
     }
   }
 
@@ -101,11 +125,15 @@ export class TelegramMarketsBot {
         `📢 Markets channel: ${this.marketsChannelId} (every 3 minutes)`
       );
       console.log(
+        `📢 Markets image channel: ${this.marketsImageChannelId} (every 2 minutes)`
+      );
+      console.log(
         `📢 Official channel: ${this.officialChannelId} (1:30 PM daily)`
       );
 
-      // Start both schedulers
+      // Start all schedulers
       this.startMarketsScheduler();
+      this.startMarketsImageScheduler();
       this.startOfficialScheduler();
     } catch (error) {
       console.error("❌ Failed to start markets bot:", error);
@@ -122,6 +150,11 @@ export class TelegramMarketsBot {
       if (this.marketsIntervalId) {
         clearInterval(this.marketsIntervalId);
         this.marketsIntervalId = null;
+      }
+
+      if (this.marketsImageIntervalId) {
+        clearInterval(this.marketsImageIntervalId);
+        this.marketsImageIntervalId = null;
       }
 
       if (this.officialIntervalId) {
@@ -147,6 +180,16 @@ export class TelegramMarketsBot {
     }, 3 * 60 * 1000); // 3 minutes in milliseconds
   }
 
+  private startMarketsImageScheduler(): void {
+    // Send image immediately on start
+    this.fetchAndSendImageToMarketsChannel();
+
+    // Then send every 2 minutes
+    this.marketsImageIntervalId = setInterval(() => {
+      this.fetchAndSendImageToMarketsChannel();
+    }, 2 * 60 * 1000); // 2 minutes in milliseconds
+  }
+
   private startOfficialScheduler(): void {
     // Check every minute if it's time to send to official channel
     this.officialIntervalId = setInterval(() => {
@@ -168,6 +211,449 @@ export class TelegramMarketsBot {
         error
       );
     }
+  }
+
+  /**
+   * Fetches market data and sends image to markets image channel
+   */
+  private async fetchAndSendImageToMarketsChannel(): Promise<void> {
+    try {
+      if (!config.services.pdfRendererUrl) {
+        // No renderer service configured – silently skip
+        return;
+      }
+
+      if (!this.marketsImageChannelId) {
+        // No image channel configured – silently skip
+        return;
+      }
+
+      // Fetch fresh market data
+      const marketData = await marketsService.fetchMarketData();
+      if (!marketData) {
+        return;
+      }
+
+      const now = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+      );
+
+      // Generate HTML with live data
+      const html = this.generateDailyPriceHtml(marketData, now);
+
+      // Convert HTML to image buffer
+      const imageBuffer = await generateImageBuffer(html);
+
+      // Send image to markets image channel (separate from main markets channel)
+      await this.bot.telegram.sendPhoto(
+        this.marketsImageChannelId,
+        { source: imageBuffer },
+        {
+          parse_mode: "HTML",
+        } as any
+      );
+
+      await this.setLastMarketsImageSent(now);
+      console.log("✅ Daily price image sent to markets image channel");
+    } catch (error) {
+      console.error("❌ Error sending daily price image:", error);
+    }
+  }
+
+  /**
+   * Helper to load font as base64 from public/fonts directory
+   */
+  private loadFontBase64(filename: string): string {
+    // Resolve path from project root to public/fonts
+    // Handle both development (src/) and production (dist/) scenarios
+    let projectRoot: string;
+
+    // Try dist/ first (production), then src/ (development)
+    const distPath = path.resolve(__dirname, "../../../../");
+    const srcPath = path.resolve(__dirname, "../../../../../");
+
+    // Check if we're in dist/ or src/ by looking for public/fonts
+    const distFontPath = path.join(distPath, "public/fonts", filename);
+    const srcFontPath = path.join(srcPath, "public/fonts", filename);
+
+    let fontPath: string;
+    if (fs.existsSync(distFontPath)) {
+      fontPath = distFontPath;
+    } else if (fs.existsSync(srcFontPath)) {
+      fontPath = srcFontPath;
+    } else {
+      throw new Error(
+        `Font file not found: ${filename}. Tried: ${distFontPath} and ${srcFontPath}`
+      );
+    }
+
+    return fs.readFileSync(fontPath).toString("base64");
+  }
+
+  /**
+   * Generates @font-face CSS with base64 encoded fonts
+   */
+  private generateFontFaces(): string {
+    const IRANSansX_UltraLight = this.loadFontBase64(
+      "IRANSANSXFANUM-ULTRALIGHT.OTF"
+    );
+    const IRANSansX_Thin = this.loadFontBase64("IRANSANSXFANUM-THIN.OTF");
+    const IRANSansX_Light = this.loadFontBase64("IRANSANSXFANUM-LIGHT.OTF");
+    const IRANSansX_Regular = this.loadFontBase64("IRANSANSXFANUM-REGULAR.OTF");
+    const IRANSansX_Medium = this.loadFontBase64("IRANSANSXFANUM-MEDIUM.OTF");
+    const IRANSansX_DemiBold = this.loadFontBase64(
+      "IRANSANSXFANUM-DEMIBOLD.OTF"
+    );
+    const IRANSansX_Bold = this.loadFontBase64("IRANSANSXFANUM-BOLD.OTF");
+    const IRANSansX_ExtraBold = this.loadFontBase64(
+      "IRANSANSXFANUM-EXTRABOLD.OTF"
+    );
+    const IRANSansX_Black = this.loadFontBase64("IRANSANSXFANUM-BLACK.OTF");
+
+    return `
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_UltraLight}') format('opentype');
+      font-weight: 100;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_Thin}') format('opentype');
+      font-weight: 200;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_Light}') format('opentype');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_Regular}') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_Medium}') format('opentype');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_DemiBold}') format('opentype');
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_Bold}') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_ExtraBold}') format('opentype');
+      font-weight: 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('data:font/opentype;base64,${IRANSansX_Black}') format('opentype');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }`;
+  }
+
+  /**
+   * Generates HTML template for daily price image with live market data
+   */
+  private generateDailyPriceHtml(marketData: any, now: Date): string {
+    const persianDate = now.toLocaleDateString("fa-IR", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      timeZone: "Asia/Tehran",
+    });
+
+    // Extract asset data
+    const usd = marketData.currency?.find((a: any) => a.symbol === "USD");
+    const btc = marketData.crypto?.find((a: any) => a.symbol === "BTC");
+    const gold18 = marketData.gold?.find((a: any) => a.symbol === "GERAM18");
+    const fullCoin = marketData.gold?.find(
+      (a: any) => a.symbol === "SEKEE_EMAMI"
+    );
+
+    // Format values
+    const formatPrice = (asset: any): string => {
+      if (!asset || !asset.cprice) return "N/A";
+      return this.formatPrice(asset.cprice);
+    };
+
+    const formatChange = (
+      asset: any
+    ): { value: string; isPositive: boolean } => {
+      if (!asset || !asset.percentageDifferenceValue) {
+        return { value: "N/A", isPositive: true };
+      }
+      const match = asset.percentageDifferenceValue.match(/([+-]?\d+\.?\d*)/);
+      if (!match) return { value: "N/A", isPositive: true };
+      const value = parseFloat(match[1]);
+      return {
+        value: `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`,
+        isPositive: value >= 0,
+      };
+    };
+
+    const btcPrice = formatPrice(btc);
+    const btcChange = formatChange(btc);
+    const usdPrice = formatPrice(usd);
+    const usdChange = formatChange(usd);
+    const goldPrice = formatPrice(gold18);
+    const goldChange = formatChange(gold18);
+    const coinPrice = formatPrice(fullCoin);
+    const coinChange = formatChange(fullCoin);
+
+    const fontFaces = this.generateFontFaces();
+
+    return `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>قیمت لحظه‌ای</title>
+  <style>
+    ${fontFaces}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'IRANSansX', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top, #063b6f 0, #012437 45%, #012022 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      direction: rtl;
+    }
+    .card {
+      width: 768px;
+      max-width: 100%;
+      border-radius: 32px;
+      background: linear-gradient(145deg, #063b6f 0, #01293f 40%, #01333b 100%);
+      padding: 32px 40px 40px;
+      color: #ffffff;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .header-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .header-date {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px 20px;
+    }
+    .tile {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 24px;
+      padding: 18px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+    }
+    .tile-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 18px;
+    }
+    .icon-btc { background: #f7931a; }
+    .icon-usd { background: #1f2933; }
+    .icon-gold { background: #eab308; }
+    .icon-coin { background: #f59e0b; }
+    .tile-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .tile-subtitle {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .tile-price {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 6px 0 4px;
+    }
+    .tile-currency {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .tile-change {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .tile-change.positive { color: #16a34a; }
+    .tile-change.negative { color: #dc2626; }
+
+    .footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .brand-sub {
+      font-size: 12px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="header-title">
+        قیمت لحظه‌ای دلار، بیت‌کوین، سکه و طلا
+      </div>
+      <div class="header-date">
+        ${persianDate}
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- بیت‌کوین -->
+      <div class="tile">
+        <div>
+          <div class="tile-header">
+            <div class="icon icon-btc">₿</div>
+            <div>
+              <div class="tile-title">بیت‌کوین</div>
+              <div class="tile-subtitle">دلار</div>
+            </div>
+          </div>
+          <div class="tile-price">
+            ${btcPrice}
+          </div>
+          <div class="tile-currency">دلار</div>
+        </div>
+        <div class="tile-change ${
+          btcChange.isPositive ? "positive" : "negative"
+        }">
+          ${btcChange.value}
+        </div>
+      </div>
+
+      <!-- دلار -->
+      <div class="tile">
+        <div>
+          <div class="tile-header">
+            <div class="icon icon-usd">$</div>
+            <div>
+              <div class="tile-title">دلار</div>
+              <div class="tile-subtitle">&nbsp;</div>
+            </div>
+          </div>
+          <div class="tile-price">
+            ${usdPrice}
+          </div>
+          <div class="tile-currency">تومان</div>
+        </div>
+        <div class="tile-change ${
+          usdChange.isPositive ? "positive" : "negative"
+        }">
+          ${usdChange.value}
+        </div>
+      </div>
+
+      <!-- طلای گرمی (۱۸ عیار) -->
+      <div class="tile">
+        <div>
+          <div class="tile-header">
+            <div class="icon icon-gold">🏅</div>
+            <div>
+              <div class="tile-title">طلای گرمی (۱۸ عیار)</div>
+              <div class="tile-subtitle">&nbsp;</div>
+            </div>
+          </div>
+          <div class="tile-price">
+            ${goldPrice}
+          </div>
+          <div class="tile-currency">تومان</div>
+        </div>
+        <div class="tile-change ${
+          goldChange.isPositive ? "positive" : "negative"
+        }">
+          ${goldChange.value}
+        </div>
+      </div>
+
+      <!-- تمام سکه -->
+      <div class="tile">
+        <div>
+          <div class="tile-header">
+            <div class="icon icon-coin">🪙</div>
+            <div>
+              <div class="tile-title">تمام سکه</div>
+              <div class="tile-subtitle">&nbsp;</div>
+            </div>
+          </div>
+          <div class="tile-price">
+            ${coinPrice}
+          </div>
+          <div class="tile-currency">تومان</div>
+        </div>
+        <div class="tile-change ${
+          coinChange.isPositive ? "positive" : "negative"
+        }">
+          ${coinChange.value}
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="brand">اسکناس</div>
+      <div class="brand-sub">پلتفرم آنلاین سرمایه‌گذاری</div>
+    </div>
+  </div>
+</body>
+</html>`;
   }
 
   private async checkAndSendToOfficialChannel(): Promise<void> {
@@ -235,7 +721,8 @@ export class TelegramMarketsBot {
       timeZone: "Asia/Tehran",
     });
 
-    let message = "🔔 اسکناس؛ پلتفرم آنلاین سرمایه‌گذاری با مبالغ خرد و کلان\n\n";
+    let message =
+      "🔔 اسکناس؛ پلتفرم آنلاین سرمایه‌گذاری با مبالغ خرد و کلان\n\n";
     message += `📅 تاریخ: ${persianDate} | ⏰ ساعت: ${persianTime}\n\n`;
     message += "‏"; // RTL mark to ensure proper right-to-left alignment
 
@@ -247,8 +734,8 @@ export class TelegramMarketsBot {
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
           ? `${this.formatPrice(
-            parseFloat(asset.cprice).toFixed(2)
-          )} ${this.formatUnit(asset.unit)}`
+              parseFloat(asset.cprice).toFixed(2)
+            )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
         message += `‏${flag} ${name}: ${price}\n`;
@@ -264,8 +751,8 @@ export class TelegramMarketsBot {
         const name = asset.name || asset.fullname || asset.symbol;
         const price = asset.cprice
           ? `${this.formatPrice(
-            parseFloat(asset.cprice).toFixed(2)
-          )} ${this.formatUnit(asset.unit)}`
+              parseFloat(asset.cprice).toFixed(2)
+            )} ${this.formatUnit(asset.unit)}`
           : "N/A";
         const change = this.formatChange(asset.percentageDifferenceValue);
 
@@ -292,8 +779,9 @@ export class TelegramMarketsBot {
 
         // Make name a link if tradable
         const displayName = asset.tradable
-          ? `<a href="${config.skenas.baseUrl
-          }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
+          ? `<a href="${
+              config.skenas.baseUrl
+            }/investment/cryptocurrency/${asset.symbol.toLowerCase()}">${name}</a>`
           : name;
 
         message += `‏ 🔸 ${displayName}: ${price}\n`;
@@ -309,7 +797,6 @@ export class TelegramMarketsBot {
     message += `\n\n🔗 @skenasio`;
     message += `\n<a href="https://skenas.io">🌐 https://skenas.io</a>`;
     message += `\n☎️ ۰۲۱۹۱۰۷۹۱۳۷`;
-
 
     return message;
   }

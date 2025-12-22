@@ -9,6 +9,7 @@ const {
   TELEGRAM_NOTIF_BOT_TOKEN,
   TELEGRAM_AUTH_BOT_TOKEN,
   TELEGRAM_MARKETS_CHANNEL_ID,
+  TELEGRAM_MARKETS_IMAGE_CHANNEL_ID,
   TELEGRAM_OFFICIAL_CHANNEL_ID,
   ADMIN_PHONE_NUMBERS,
   CRYPTO_AUTHORIZED_ADMINS,
@@ -19,6 +20,7 @@ const {
   REDIS_PASSWORD,
   SKENAS_API_BASE_URL,
   SKENAS_BASE_URL,
+  PDF_RENDERER_URL,
 } = process.env;
 
 export const config = {
@@ -28,6 +30,7 @@ export const config = {
     notifBotToken: TELEGRAM_NOTIF_BOT_TOKEN || "",
     authBotToken: TELEGRAM_AUTH_BOT_TOKEN || "",
     marketsChannelId: TELEGRAM_MARKETS_CHANNEL_ID || "",
+    marketsImageChannelId: TELEGRAM_MARKETS_IMAGE_CHANNEL_ID || "",
     officialChannelId: TELEGRAM_OFFICIAL_CHANNEL_ID || "",
   },
   admin: {
@@ -50,6 +53,9 @@ export const config = {
   skenas: {
     apiBaseUrl: SKENAS_API_BASE_URL || "",
     baseUrl: SKENAS_BASE_URL || "",
+  },
+  services: {
+    pdfRendererUrl: PDF_RENDERER_URL || "",
   },
   allowedOrigins: ALLOWED_ORIGINS || "",
 };
