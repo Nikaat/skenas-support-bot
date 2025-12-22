@@ -470,29 +470,36 @@ export class TelegramMarketsBot {
       font-size: 14px;
     }
     .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 15px;
     }
     .tile {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 24px;
-      padding: 18px 20px 20px;
+      border-radius: 20px;
+      padding: 12px 16px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      align-items: center;
       box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+      width: 240px;
+      height: 200px;
     }
     .tile-header {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      justify-content: center;
+      width: 100%;
+      margin-bottom: 8px;
     }
     .icon {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 999px;
       display: flex;
       align-items: center;
@@ -502,6 +509,7 @@ export class TelegramMarketsBot {
       font-size: 18px;
       font-weight: 700;
       color: #ffffff;
+      margin-bottom: 8px;
     }
     .icon img {
       width: 100%;
@@ -513,31 +521,34 @@ export class TelegramMarketsBot {
     .icon-gold { background: #eab308; }
     .icon-coin { background: #f59e0b; }
     .tile-title {
-      font-size: 16px;
+      font-size: 24px;
       font-weight: 700;
+      text-align: center;
     }
     .tile-subtitle {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 2px;
+      display: none;
     }
     .tile-price {
-      font-size: 18px;
+      font-size: 24px;
       font-weight: 700;
-      margin: 6px 0 4px;
+      margin: 6px 0;
       display: flex;
       align-items: baseline;
+      justify-content: center;
       gap: 4px;
+      width: 100%;
     }
     .tile-currency {
-      font-size: 12px;
+      font-size: 18px;
       color: #6b7280;
       font-weight: 400;
     }
     .tile-change {
-      margin-top: 6px;
-      font-size: 13px;
+      margin-top: 4px;
+      font-size: 18px;
       font-weight: 600;
+      text-align: center;
+      width: 100%;
     }
     .tile-change.positive { color: #16a34a; }
     .tile-change.negative { color: #dc2626; }
@@ -572,19 +583,14 @@ export class TelegramMarketsBot {
     <div class="grid">
       <!-- بیت‌کوین -->
       <div class="tile">
-        <div>
-          <div class="tile-header">
-            <div class="icon icon-btc">${
-              btc?.image ? `<img src="${btc.image}" alt="بیت‌کوین" />` : "₿"
-            }</div>
-            <div>
-              <div class="tile-title">بیت‌کوین</div>
-              <div class="tile-subtitle">دلار</div>
-            </div>
-          </div>
-          <div class="tile-price">
-            ${btcPrice} <span class="tile-currency">دلار</span>
-          </div>
+        <div class="tile-header">
+          <div class="icon icon-btc">${
+            btc?.image ? `<img src="${btc.image}" alt="بیت‌کوین" />` : "₿"
+          }</div>
+          <div class="tile-title">بیت‌کوین</div>
+        </div>
+        <div class="tile-price">
+          ${btcPrice} <span class="tile-currency">دلار</span>
         </div>
         <div class="tile-change ${
           btcChange.isPositive ? "positive" : "negative"
@@ -595,19 +601,14 @@ export class TelegramMarketsBot {
 
       <!-- دلار -->
       <div class="tile">
-        <div>
-          <div class="tile-header">
-            <div class="icon icon-usd">${
-              usd?.image ? `<img src="${usd.image}" alt="دلار" />` : "$"
-            }</div>
-            <div>
-              <div class="tile-title">دلار</div>
-              <div class="tile-subtitle">&nbsp;</div>
-            </div>
-          </div>
-          <div class="tile-price">
-            ${usdPrice} <span class="tile-currency">تومان</span>
-          </div>
+        <div class="tile-header">
+          <div class="icon icon-usd">${
+            usd?.image ? `<img src="${usd.image}" alt="دلار" />` : "$"
+          }</div>
+          <div class="tile-title">دلار</div>
+        </div>
+        <div class="tile-price">
+          ${usdPrice} <span class="tile-currency">تومان</span>
         </div>
         <div class="tile-change ${
           usdChange.isPositive ? "positive" : "negative"
@@ -615,24 +616,20 @@ export class TelegramMarketsBot {
           ${usdChange.value}
         </div>
       </div>
-
+    </div>
+    <div class="grid">
       <!-- طلای گرمی (۱۸ عیار) -->
       <div class="tile">
-        <div>
-          <div class="tile-header">
-            <div class="icon icon-gold">${
-              gold18?.image
-                ? `<img src="${gold18.image}" alt="طلای گرمی" />`
-                : "🏅"
-            }</div>
-            <div>
-              <div class="tile-title">طلای گرمی (۱۸ عیار)</div>
-              <div class="tile-subtitle">&nbsp;</div>
-            </div>
-          </div>
-          <div class="tile-price">
-            ${goldPrice} <span class="tile-currency">تومان</span>
-          </div>
+        <div class="tile-header">
+          <div class="icon icon-gold">${
+            gold18?.image
+              ? `<img src="${gold18.image}" alt="طلای گرمی" />`
+              : "🏅"
+          }</div>
+          <div class="tile-title">طلای گرمی (۱۸ عیار)</div>
+        </div>
+        <div class="tile-price">
+          ${goldPrice} <span class="tile-currency">تومان</span>
         </div>
         <div class="tile-change ${
           goldChange.isPositive ? "positive" : "negative"
@@ -643,21 +640,16 @@ export class TelegramMarketsBot {
 
       <!-- تمام سکه -->
       <div class="tile">
-        <div>
-          <div class="tile-header">
-            <div class="icon icon-coin">${
-              fullCoin?.image
-                ? `<img src="${fullCoin.image}" alt="تمام سکه" />`
-                : "🪙"
-            }</div>
-            <div>
-              <div class="tile-title">تمام سکه</div>
-              <div class="tile-subtitle">&nbsp;</div>
-            </div>
-          </div>
-          <div class="tile-price">
-            ${coinPrice} <span class="tile-currency">تومان</span>
-          </div>
+        <div class="tile-header">
+          <div class="icon icon-coin">${
+            fullCoin?.image
+              ? `<img src="${fullCoin.image}" alt="تمام سکه" />`
+              : "🪙"
+          }</div>
+          <div class="tile-title">تمام سکه</div>
+        </div>
+        <div class="tile-price">
+          ${coinPrice} <span class="tile-currency">تومان</span>
         </div>
         <div class="tile-change ${
           coinChange.isPositive ? "positive" : "negative"
