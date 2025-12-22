@@ -497,8 +497,16 @@ export class TelegramMarketsBot {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
+      overflow: hidden;
+      flex-shrink: 0;
       font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .icon-btc { background: #f7931a; }
     .icon-usd { background: #1f2933; }
@@ -517,10 +525,14 @@ export class TelegramMarketsBot {
       font-size: 18px;
       font-weight: 700;
       margin: 6px 0 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
     }
     .tile-currency {
       font-size: 12px;
       color: #6b7280;
+      font-weight: 400;
     }
     .tile-change {
       margin-top: 6px;
@@ -562,16 +574,17 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div>
           <div class="tile-header">
-            <div class="icon icon-btc">₿</div>
+            <div class="icon icon-btc">${
+              btc?.image ? `<img src="${btc.image}" alt="بیت‌کوین" />` : "₿"
+            }</div>
             <div>
               <div class="tile-title">بیت‌کوین</div>
               <div class="tile-subtitle">دلار</div>
             </div>
           </div>
           <div class="tile-price">
-            ${btcPrice}
+            ${btcPrice} <span class="tile-currency">دلار</span>
           </div>
-          <div class="tile-currency">دلار</div>
         </div>
         <div class="tile-change ${
           btcChange.isPositive ? "positive" : "negative"
@@ -584,16 +597,17 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div>
           <div class="tile-header">
-            <div class="icon icon-usd">$</div>
+            <div class="icon icon-usd">${
+              usd?.image ? `<img src="${usd.image}" alt="دلار" />` : "$"
+            }</div>
             <div>
               <div class="tile-title">دلار</div>
               <div class="tile-subtitle">&nbsp;</div>
             </div>
           </div>
           <div class="tile-price">
-            ${usdPrice}
+            ${usdPrice} <span class="tile-currency">تومان</span>
           </div>
-          <div class="tile-currency">تومان</div>
         </div>
         <div class="tile-change ${
           usdChange.isPositive ? "positive" : "negative"
@@ -606,16 +620,19 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div>
           <div class="tile-header">
-            <div class="icon icon-gold">🏅</div>
+            <div class="icon icon-gold">${
+              gold18?.image
+                ? `<img src="${gold18.image}" alt="طلای گرمی" />`
+                : "🏅"
+            }</div>
             <div>
               <div class="tile-title">طلای گرمی (۱۸ عیار)</div>
               <div class="tile-subtitle">&nbsp;</div>
             </div>
           </div>
           <div class="tile-price">
-            ${goldPrice}
+            ${goldPrice} <span class="tile-currency">تومان</span>
           </div>
-          <div class="tile-currency">تومان</div>
         </div>
         <div class="tile-change ${
           goldChange.isPositive ? "positive" : "negative"
@@ -628,16 +645,19 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div>
           <div class="tile-header">
-            <div class="icon icon-coin">🪙</div>
+            <div class="icon icon-coin">${
+              fullCoin?.image
+                ? `<img src="${fullCoin.image}" alt="تمام سکه" />`
+                : "🪙"
+            }</div>
             <div>
               <div class="tile-title">تمام سکه</div>
               <div class="tile-subtitle">&nbsp;</div>
             </div>
           </div>
           <div class="tile-price">
-            ${coinPrice}
+            ${coinPrice} <span class="tile-currency">تومان</span>
           </div>
-          <div class="tile-currency">تومان</div>
         </div>
         <div class="tile-change ${
           coinChange.isPositive ? "positive" : "negative"
