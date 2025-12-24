@@ -125,7 +125,7 @@ export class TelegramMarketsBot {
         `📢 Markets channel: ${this.marketsChannelId} (every 3 minutes)`
       );
       console.log(
-        `📢 Markets image channel: ${this.marketsImageChannelId} (every 2 minutes)`
+        `📢 Markets image channel: ${this.marketsImageChannelId} (every 6 hours)`
       );
       console.log(
         `📢 Official channel: ${this.officialChannelId} (1:30 PM daily)`
@@ -184,10 +184,10 @@ export class TelegramMarketsBot {
     // Send image immediately on start
     this.fetchAndSendImageToMarketsChannel();
 
-    // Then send every 2 minutes
+    // Then send every 6 hours
     this.marketsImageIntervalId = setInterval(() => {
       this.fetchAndSendImageToMarketsChannel();
-    }, 2 * 60 * 1000); // 2 minutes in milliseconds
+    }, 6 * 60 * 60 * 1000); // 6 hours in milliseconds
   }
 
   private startOfficialScheduler(): void {
