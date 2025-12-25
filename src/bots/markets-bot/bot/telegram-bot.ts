@@ -434,10 +434,19 @@ export class TelegramMarketsBot {
   <title>قیمت لحظه‌ای</title>
   <style>
     ${fontFaces}
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'IRANSansX', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: radial-gradient(circle at top, #063b6f 0, #012437 45%, #012022 100%);
+      background: radial-gradient(
+        circle at top,
+        #063b6f 0,
+        #012437 45%,
+        #012022 100%
+      );
       display: flex;
       align-items: flex-end;
       justify-content: center;
@@ -461,13 +470,16 @@ export class TelegramMarketsBot {
       margin: 96px 0;
     }
     .header-title {
-      font-size: 108px;
+      font-size: 110px;
       font-weight: 700;
       margin-bottom: 28.8px;
     }
+    .header-title-small {
+      font-size: 70px;
+    }
     .header-date {
       display: inline-block;
-      padding: 14.4px 43.2px;
+      padding: 14.4px 80px;
       margin-top: 36px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.08);
@@ -483,15 +495,15 @@ export class TelegramMarketsBot {
     .tile {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 48px;
+      border-radius: 60px;
       padding: 28.8px 38.4px 38.4px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
-      width: 840px;
-      height: 600px;
+      width: 750px;
+      height: 640px;
     }
     .tile-header {
       display: flex;
@@ -502,8 +514,8 @@ export class TelegramMarketsBot {
       margin-bottom: 19.2px;
     }
     .icon {
-      width: 86.4px;
-      height: 86.4px;
+      width: 120px;
+      height: 120px;
       border-radius: 999px;
       display: flex;
       align-items: center;
@@ -513,7 +525,8 @@ export class TelegramMarketsBot {
       font-size: 43.2px;
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 19.2px;
+      margin-bottom: 60px;
+      margin-top: 30px;
     }
     .icon img {
       width: 100%;
@@ -525,8 +538,8 @@ export class TelegramMarketsBot {
     .icon-gold { background: #eab308; }
     .icon-coin { background: #f59e0b; }
     .tile-title {
-      font-size: 57.6px;
-      font-weight: 700;
+      font-size: 70px;
+      font-weight: 600;
       text-align: center;
     }
     .tile-subtitle {
@@ -567,6 +580,13 @@ export class TelegramMarketsBot {
       font-size: 43.2px;
       margin-bottom: 9.6px;
     }
+    .brand img {
+      height: auto;
+      max-width: 270px;
+      width: 270px;
+      display: block;
+      margin: 0 auto;
+    }
     .brand-sub {
       font-size: 28.8px;
       opacity: 0.85;
@@ -577,7 +597,8 @@ export class TelegramMarketsBot {
   <div class="card">
     <div class="header">
       <div class="header-title">
-        قیمت لحظه‌ای دلار، بیت‌کوین، سکه و طلا
+        <span class="header-title-small">قیمت لحظه‌ای</span> دلار، بیت‌کوین،
+        سکه و طلا
       </div>
       <div class="header-date">
         ${persianDate}
@@ -588,9 +609,11 @@ export class TelegramMarketsBot {
       <!-- بیت‌کوین -->
       <div class="tile">
         <div class="tile-header">
-          <div class="icon icon-btc">${
-            btc?.image ? `<img src="${btc.image}" alt="بیت‌کوین" />` : "₿"
-          }</div>
+          <div class="icon icon-btc">
+            <img src="${
+              btc?.image || "https://file.skenas.io/market-icons/btc.png"
+            }" alt="بیت‌کوین" />
+          </div>
           <div class="tile-title">بیت‌کوین</div>
         </div>
         <div class="tile-price">
@@ -606,9 +629,11 @@ export class TelegramMarketsBot {
       <!-- دلار -->
       <div class="tile">
         <div class="tile-header">
-          <div class="icon icon-usd">${
-            usd?.image ? `<img src="${usd.image}" alt="دلار" />` : "$"
-          }</div>
+          <div class="icon icon-usd">
+            <img src="${
+              usd?.image || "https://file.skenas.io/market-icons/usd.png"
+            }" alt="دلار" />
+          </div>
           <div class="tile-title">دلار</div>
         </div>
         <div class="tile-price">
@@ -625,11 +650,11 @@ export class TelegramMarketsBot {
       <!-- طلای گرمی (۱۸ عیار) -->
       <div class="tile">
         <div class="tile-header">
-          <div class="icon icon-gold">${
-            gold18?.image
-              ? `<img src="${gold18.image}" alt="طلای گرمی" />`
-              : "🏅"
-          }</div>
+          <div class="icon icon-gold">
+            <img src="${
+              gold18?.image || "https://file.skenas.io/market-icons/gold.png"
+            }" alt="طلای گرمی" />
+          </div>
           <div class="tile-title">طلای گرمی (۱۸ عیار)</div>
         </div>
         <div class="tile-price">
@@ -645,11 +670,11 @@ export class TelegramMarketsBot {
       <!-- تمام سکه -->
       <div class="tile">
         <div class="tile-header">
-          <div class="icon icon-coin">${
-            fullCoin?.image
-              ? `<img src="${fullCoin.image}" alt="تمام سکه" />`
-              : "🪙"
-          }</div>
+          <div class="icon icon-coin">
+            <img src="${
+              fullCoin?.image || "https://file.skenas.io/market-icons/coin.png"
+            }" alt="تمام سکه" />
+          </div>
           <div class="tile-title">تمام سکه</div>
         </div>
         <div class="tile-price">
@@ -664,7 +689,9 @@ export class TelegramMarketsBot {
     </div>
 
     <div class="footer">
-      <div class="brand">اسکناس</div>
+      <div class="brand">
+        <img src="https://file.skenas.io/market-icons/skenas-white.png" alt="اسکناس" />
+      </div>
       <div class="brand-sub">پلتفرم آنلاین سرمایه‌گذاری</div>
     </div>
   </div>
