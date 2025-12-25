@@ -450,48 +450,50 @@ export class TelegramMarketsBot {
     }
     .card {
       width: 2000px;
-      border-radius: 60px 60px 0 0;
+      border-radius: 76.8px 76.8px 0 0;
       backdrop-filter: blur(100px);
       background: rgba(255, 255, 255, 0.08);
-      padding: 60px 80px 80px;
+      padding: 43.2px 60px 60px;
       color: #ffffff;
     }
     .header {
       text-align: center;
-      margin: 60px 0;
+      margin: 96px 0;
     }
     .header-title {
-      font-size: 90px;
+      font-size: 108px;
       font-weight: 700;
-      margin-bottom: 24px;
+      margin-bottom: 28.8px;
     }
     .header-date {
       display: inline-block;
-      padding: 12px 36px;
-      margin-top: 30px;
+      padding: 14.4px 43.2px;
+      margin-top: 36px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.08);
-      font-size: 42px;
+      font-size: 50.4px;
     }
     .grid {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       align-items: center;
-      justify-content: center;
-      gap: 40px;
-      margin-top: 40px;
+      justify-items: center;
+      gap: 48px;
+      margin-top: 48px;
     }
     .tile {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 40px;
-      padding: 24px 32px 32px;
+      border-radius: 48px;
+      padding: 28.8px 38.4px 38.4px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
-      width: 700px;
-      height: 500px;
+      box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
+      width: 840px;
+      height: 840px;
+      aspect-ratio: 1;
     }
     .tile-header {
       display: flex;
@@ -499,21 +501,21 @@ export class TelegramMarketsBot {
       align-items: center;
       justify-content: center;
       width: 100%;
-      margin-bottom: 16px;
+      margin-bottom: 19.2px;
     }
     .icon {
-      width: 72px;
-      height: 72px;
+      width: 86.4px;
+      height: 86.4px;
       border-radius: 999px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       flex-shrink: 0;
-      font-size: 36px;
+      font-size: 43.2px;
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 16px;
+      margin-bottom: 19.2px;
     }
     .icon img {
       width: 100%;
@@ -525,7 +527,7 @@ export class TelegramMarketsBot {
     .icon-gold { background: #eab308; }
     .icon-coin { background: #f59e0b; }
     .tile-title {
-      font-size: 48px;
+      font-size: 33.6px;
       font-weight: 700;
       text-align: center;
     }
@@ -533,23 +535,23 @@ export class TelegramMarketsBot {
       display: none;
     }
     .tile-price {
-      font-size: 48px;
+      font-size: 43.2px;
       font-weight: 700;
-      margin: 12px 0;
+      margin: 14.4px 0;
       display: flex;
       align-items: baseline;
       justify-content: center;
-      gap: 8px;
+      gap: 9.6px;
       width: 100%;
     }
     .tile-currency {
-      font-size: 36px;
+      font-size: 26.4px;
       color: #6b7280;
       font-weight: 400;
     }
     .tile-change {
-      margin-top: 8px;
-      font-size: 36px;
+      margin-top: 9.6px;
+      font-size: 28.8px;
       font-weight: 600;
       text-align: center;
       width: 100%;
@@ -558,17 +560,17 @@ export class TelegramMarketsBot {
     .tile-change.negative { color: #dc2626; }
 
     .footer {
-      margin-top: 56px;
+      margin-top: 67.2px;
       text-align: center;
-      font-size: 28px;
+      font-size: 33.6px;
     }
     .brand {
       font-weight: 700;
-      font-size: 36px;
-      margin-bottom: 8px;
+      font-size: 43.2px;
+      margin-bottom: 9.6px;
     }
     .brand-sub {
-      font-size: 24px;
+      font-size: 28.8px;
       opacity: 0.85;
     }
   </style>
@@ -620,8 +622,7 @@ export class TelegramMarketsBot {
           ${usdChange.value}
         </div>
       </div>
-    </div>
-    <div class="grid">
+
       <!-- طلای گرمی (۱۸ عیار) -->
       <div class="tile">
         <div class="tile-header">
