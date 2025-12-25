@@ -184,10 +184,10 @@ export class TelegramMarketsBot {
     // Send image immediately on start
     this.fetchAndSendImageToMarketsChannel();
 
-    // Then send every 6 hours
+    // Then send every 3 minutes
     this.marketsImageIntervalId = setInterval(() => {
       this.fetchAndSendImageToMarketsChannel();
-    }, 6 * 60 * 60 * 1000); // 6 hours in milliseconds
+    }, 3 * 60 * 1000); // 3 minutes in milliseconds
   }
 
   private startOfficialScheduler(): void {
