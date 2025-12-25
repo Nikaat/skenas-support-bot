@@ -441,54 +441,57 @@ export class TelegramMarketsBot {
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      min-height: 100vh;
+      width: 2160px;
+      height: 2160px;
+      margin: 0;
+      padding: 0;
       direction: rtl;
+      overflow: hidden;
     }
     .card {
-      width: 1000px;
-      max-width: 100%;
-      border-radius: 32px 32px 0 0;
+      width: 2000px;
+      border-radius: 76.8px 76.8px 0 0;
       backdrop-filter: blur(100px);
       background: rgba(255, 255, 255, 0.08);
-      padding: 32px 40px 40px;
+      padding: 43.2px 60px 60px;
       color: #ffffff;
     }
     .header {
       text-align: center;
-      margin: 40px 0;
+      margin: 96px 0;
     }
     .header-title {
-      font-size: 45px;
+      font-size: 108px;
       font-weight: 700;
-      margin-bottom: 12px;
+      margin-bottom: 28.8px;
     }
     .header-date {
       display: inline-block;
-      padding: 6px 18px;
-      margin-top: 15px;
+      padding: 14.4px 43.2px;
+      margin-top: 36px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.08);
-      font-size: 21px;
+      font-size: 50.4px;
     }
     .grid {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      margin-top: 20px;
+      gap: 48px;
+      margin-top: 48px;
     }
     .tile {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 20px;
-      padding: 12px 16px 16px;
+      border-radius: 48px;
+      padding: 28.8px 38.4px 38.4px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
-      width: 350px;
-      height: 250px;
+      box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
+      width: 840px;
+      height: 600px;
     }
     .tile-header {
       display: flex;
@@ -496,21 +499,21 @@ export class TelegramMarketsBot {
       align-items: center;
       justify-content: center;
       width: 100%;
-      margin-bottom: 8px;
+      margin-bottom: 19.2px;
     }
     .icon {
-      width: 36px;
-      height: 36px;
+      width: 86.4px;
+      height: 86.4px;
       border-radius: 999px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       flex-shrink: 0;
-      font-size: 18px;
+      font-size: 43.2px;
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 8px;
+      margin-bottom: 19.2px;
     }
     .icon img {
       width: 100%;
@@ -522,7 +525,7 @@ export class TelegramMarketsBot {
     .icon-gold { background: #eab308; }
     .icon-coin { background: #f59e0b; }
     .tile-title {
-      font-size: 24px;
+      font-size: 57.6px;
       font-weight: 700;
       text-align: center;
     }
@@ -530,23 +533,23 @@ export class TelegramMarketsBot {
       display: none;
     }
     .tile-price {
-      font-size: 24px;
+      font-size: 57.6px;
       font-weight: 700;
-      margin: 6px 0;
+      margin: 14.4px 0;
       display: flex;
       align-items: baseline;
       justify-content: center;
-      gap: 4px;
+      gap: 9.6px;
       width: 100%;
     }
     .tile-currency {
-      font-size: 18px;
+      font-size: 43.2px;
       color: #6b7280;
       font-weight: 400;
     }
     .tile-change {
-      margin-top: 4px;
-      font-size: 18px;
+      margin-top: 9.6px;
+      font-size: 43.2px;
       font-weight: 600;
       text-align: center;
       width: 100%;
@@ -555,17 +558,17 @@ export class TelegramMarketsBot {
     .tile-change.negative { color: #dc2626; }
 
     .footer {
-      margin-top: 28px;
+      margin-top: 67.2px;
       text-align: center;
-      font-size: 14px;
+      font-size: 33.6px;
     }
     .brand {
       font-weight: 700;
-      font-size: 18px;
-      margin-bottom: 4px;
+      font-size: 43.2px;
+      margin-bottom: 9.6px;
     }
     .brand-sub {
-      font-size: 12px;
+      font-size: 28.8px;
       opacity: 0.85;
     }
   </style>
