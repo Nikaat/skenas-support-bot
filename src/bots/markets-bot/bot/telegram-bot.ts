@@ -440,12 +440,13 @@ export class TelegramMarketsBot {
       padding: 0;
     }
     body {
-      font-family: 'IRANSansX', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: radial-gradient(
-        circle at top,
-        #063b6f 0,
-        #012437 45%,
-        #012022 100%
+      font-family: "IRANSansX", system-ui, -apple-system, BlinkMacSystemFont,
+        sans-serif;
+      background: linear-gradient(
+        to bottom,
+        #062746 0,
+        #153d46 45%,
+        #235245 100%
       );
       display: flex;
       align-items: flex-end;
@@ -458,11 +459,11 @@ export class TelegramMarketsBot {
       overflow: hidden;
     }
     .card {
-      width: 2000px;
-      border-radius: 76.8px 76.8px 0 0;
+      width: 1950px;
+      border-radius: 110px 110px 0 0;
       backdrop-filter: blur(100px);
       background: rgba(255, 255, 255, 0.08);
-      padding: 43.2px 60px 60px;
+      padding: 30px 30px 30px;
       color: #ffffff;
     }
     .header {
@@ -495,7 +496,7 @@ export class TelegramMarketsBot {
     .tile {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 60px;
+      border-radius: 80px;
       padding: 28.8px 38.4px 38.4px;
       display: flex;
       flex-direction: column;
@@ -514,8 +515,8 @@ export class TelegramMarketsBot {
       margin-bottom: 19.2px;
     }
     .icon {
-      width: 120px;
-      height: 120px;
+      width: 130px;
+      height: 130px;
       border-radius: 999px;
       display: flex;
       align-items: center;
@@ -532,6 +533,7 @@ export class TelegramMarketsBot {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      background-color: #ffffff;
     }
     .icon-btc { background: #f7931a; }
     .icon-usd { background: #1f2933; }
@@ -546,7 +548,7 @@ export class TelegramMarketsBot {
       display: none;
     }
     .tile-price {
-      font-size: 57.6px;
+      font-size: 65px;
       font-weight: 700;
       margin: 14.4px 0;
       display: flex;
@@ -582,13 +584,14 @@ export class TelegramMarketsBot {
     }
     .brand img {
       height: auto;
-      max-width: 270px;
-      width: 270px;
+      max-width: 280px;
+      width: 280px;
       display: block;
       margin: 0 auto;
     }
     .brand-sub {
       font-size: 28.8px;
+      /* font-weight: 150; */
       opacity: 0.85;
     }
   </style>
@@ -610,9 +613,7 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div class="tile-header">
           <div class="icon icon-btc">
-            <img src="${
-              btc?.image || "https://file.skenas.io/market-icons/btc.png"
-            }" alt="بیت‌کوین" />
+            <img src="${"https://file.skenas.io/market-icons/btc.png"}" alt="بیت‌کوین" />
           </div>
           <div class="tile-title">بیت‌کوین</div>
         </div>
@@ -630,9 +631,7 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div class="tile-header">
           <div class="icon icon-usd">
-            <img src="${
-              usd?.image || "https://file.skenas.io/market-icons/usd.png"
-            }" alt="دلار" />
+            <img src="${"https://file.skenas.io/market-icons/usd.png"}" alt="دلار" />
           </div>
           <div class="tile-title">دلار</div>
         </div>
@@ -651,9 +650,7 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div class="tile-header">
           <div class="icon icon-gold">
-            <img src="${
-              gold18?.image || "https://file.skenas.io/market-icons/gold.png"
-            }" alt="طلای گرمی" />
+            <img src="${"https://file.skenas.io/market-icons/gold.png"}" alt="طلای گرمی" />
           </div>
           <div class="tile-title">طلای گرمی (۱۸ عیار)</div>
         </div>
@@ -671,9 +668,7 @@ export class TelegramMarketsBot {
       <div class="tile">
         <div class="tile-header">
           <div class="icon icon-coin">
-            <img src="${
-              fullCoin?.image || "https://file.skenas.io/market-icons/coin.png"
-            }" alt="تمام سکه" />
+            <img src="${"https://file.skenas.io/market-icons/coin.png"}" alt="تمام سکه" />
           </div>
           <div class="tile-title">تمام سکه</div>
         </div>
