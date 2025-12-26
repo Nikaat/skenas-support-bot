@@ -10,18 +10,15 @@ export class TelegramMarketsBot {
   private bot: Telegraf<Context>;
   private isRunning: boolean = false;
   private marketsChannelId: string;
-  private marketsImageChannelId: string;
   private officialChannelId: string;
 
   // Schedulers
   private marketsIntervalId: NodeJS.Timeout | null = null;
-  private marketsImageIntervalId: NodeJS.Timeout | null = null;
   private officialIntervalId: NodeJS.Timeout | null = null;
 
   constructor() {
     this.bot = new Telegraf(config.telegram.marketsBotToken);
     this.marketsChannelId = config.telegram.marketsChannelId;
-    this.marketsImageChannelId = config.telegram.marketsImageChannelId;
     this.officialChannelId = config.telegram.officialChannelId;
     this.setupCommands();
     this.setupErrorHandling();
@@ -78,24 +75,6 @@ export class TelegramMarketsBot {
     }
   }
 
-  private async getLastMarketsImageSent(): Promise<Date | null> {
-    try {
-      const timestamp = await redis.get("lastMarketsImageSent");
-      return timestamp ? new Date(parseInt(timestamp)) : null;
-    } catch (error) {
-      console.error("❌ Error getting lastMarketsImageSent from Redis:", error);
-      return null;
-    }
-  }
-
-  private async setLastMarketsImageSent(date: Date): Promise<void> {
-    try {
-      await redis.set("lastMarketsImageSent", date.getTime().toString());
-    } catch (error) {
-      console.error("❌ Error setting lastMarketsImageSent in Redis:", error);
-    }
-  }
-
   private async setLastOfficialSent(date: Date): Promise<void> {
     try {
       await redis.set("lastOfficialSent", date.getTime().toString());
@@ -125,15 +104,11 @@ export class TelegramMarketsBot {
         `📢 Markets channel: ${this.marketsChannelId} (every 3 minutes)`
       );
       console.log(
-        `📢 Markets image channel: ${this.marketsImageChannelId} (every 6 hours)`
-      );
-      console.log(
-        `📢 Official channel: ${this.officialChannelId} (1:30 PM daily)`
+        `📢 Official channel: ${this.officialChannelId} (1:30 PM daily - image)`
       );
 
       // Start all schedulers
       this.startMarketsScheduler();
-      this.startMarketsImageScheduler();
       this.startOfficialScheduler();
     } catch (error) {
       console.error("❌ Failed to start markets bot:", error);
@@ -150,11 +125,6 @@ export class TelegramMarketsBot {
       if (this.marketsIntervalId) {
         clearInterval(this.marketsIntervalId);
         this.marketsIntervalId = null;
-      }
-
-      if (this.marketsImageIntervalId) {
-        clearInterval(this.marketsImageIntervalId);
-        this.marketsImageIntervalId = null;
       }
 
       if (this.officialIntervalId) {
@@ -180,16 +150,6 @@ export class TelegramMarketsBot {
     }, 3 * 60 * 1000); // 3 minutes in milliseconds
   }
 
-  private startMarketsImageScheduler(): void {
-    // Send image immediately on start
-    this.fetchAndSendImageToMarketsChannel();
-
-    // Then send every 3 minutes
-    this.marketsImageIntervalId = setInterval(() => {
-      this.fetchAndSendImageToMarketsChannel();
-    }, 3 * 60 * 1000); // 3 minutes in milliseconds
-  }
-
   private startOfficialScheduler(): void {
     // Check every minute if it's time to send to official channel
     this.officialIntervalId = setInterval(() => {
@@ -210,53 +170,6 @@ export class TelegramMarketsBot {
         "❌ Error fetching/sending market data to markets channel:",
         error
       );
-    }
-  }
-
-  /**
-   * Fetches market data and sends image to markets image channel
-   */
-  private async fetchAndSendImageToMarketsChannel(): Promise<void> {
-    try {
-      if (!config.services.pdfRendererUrl) {
-        // No renderer service configured – silently skip
-        return;
-      }
-
-      if (!this.marketsImageChannelId) {
-        // No image channel configured – silently skip
-        return;
-      }
-
-      // Fetch fresh market data
-      const marketData = await marketsService.fetchMarketData();
-      if (!marketData) {
-        return;
-      }
-
-      const now = new Date(
-        new Date().toLocaleString("en-US", { timeZone: "Asia/Tehran" })
-      );
-
-      // Generate HTML with live data
-      const html = this.generateDailyPriceHtml(marketData, now);
-
-      // Convert HTML to image buffer
-      const imageBuffer = await generateImageBuffer(html);
-
-      // Send image to markets image channel (separate from main markets channel)
-      await this.bot.telegram.sendPhoto(
-        this.marketsImageChannelId,
-        { source: imageBuffer },
-        {
-          parse_mode: "HTML",
-        } as any
-      );
-
-      await this.setLastMarketsImageSent(now);
-      console.log("✅ Daily price image sent to markets image channel");
-    } catch (error) {
-      console.error("❌ Error sending daily price image:", error);
     }
   }
 
@@ -483,6 +396,7 @@ export class TelegramMarketsBot {
       padding: 14.4px 80px;
       margin-top: 36px;
       border-radius: 999px;
+      font-weight: 400;
       background: rgba(255, 255, 255, 0.08);
       font-size: 40px;
     }
@@ -716,13 +630,31 @@ export class TelegramMarketsBot {
         (!lastOfficialSent || this.isDifferentDay(now, lastOfficialSent));
 
       if (shouldSend) {
+        if (!config.services.pdfRendererUrl) {
+          // No renderer service configured – skip
+          return;
+        }
+
         const marketData = await marketsService.fetchMarketData();
         if (marketData) {
-          const message = this.formatMarketDataMessage(marketData);
-          await this.sendMessageToChannel(this.officialChannelId, message);
+          // Generate HTML with live data
+          const html = this.generateDailyPriceHtml(marketData, now);
+
+          // Convert HTML to image buffer
+          const imageBuffer = await generateImageBuffer(html);
+
+          // Send image to official channel instead of text message
+          await this.bot.telegram.sendPhoto(
+            this.officialChannelId,
+            { source: imageBuffer },
+            {
+              parse_mode: "HTML",
+            } as any
+          );
+
           await this.setLastOfficialSent(now);
           console.log(
-            `✅ Market data sent to official channel at 13:30 Iran time`
+            `✅ Market price image sent to official channel at 13:30 Iran time`
           );
         }
       }
