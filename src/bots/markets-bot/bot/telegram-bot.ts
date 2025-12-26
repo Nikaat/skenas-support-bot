@@ -459,24 +459,24 @@ export class TelegramMarketsBot {
       overflow: hidden;
     }
     .card {
-      width: 1950px;
+      width: 1910px;
       border-radius: 110px 110px 0 0;
       backdrop-filter: blur(100px);
       background: rgba(255, 255, 255, 0.08);
-      padding: 30px 30px 30px;
+      padding: 30px 30px 55px;
       color: #ffffff;
     }
     .header {
       text-align: center;
-      margin: 96px 0;
+      margin: 60px 0;
     }
     .header-title {
       font-size: 110px;
-      font-weight: 700;
-      margin-bottom: 28.8px;
+      font-weight: 650;
+      margin-bottom: 20px;
     }
     .header-title-small {
-      font-size: 70px;
+      font-size: 65px;
     }
     .header-date {
       display: inline-block;
@@ -484,19 +484,19 @@ export class TelegramMarketsBot {
       margin-top: 36px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.08);
-      font-size: 50.4px;
+      font-size: 40px;
     }
     .grid {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 48px;
-      margin-top: 48px;
+      gap: 60px;
+      margin-top: 60px;
     }
     .tile {
       background: #ffffff;
       color: #0f172a;
-      border-radius: 80px;
+      border-radius: 90px;
       padding: 28.8px 38.4px 38.4px;
       display: flex;
       flex-direction: column;
