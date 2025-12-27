@@ -75,6 +75,24 @@ export class TelegramMarketsBot {
     }
   }
 
+  private async getLastMarketsImageSent(): Promise<Date | null> {
+    try {
+      const timestamp = await redis.get("lastMarketsImageSent");
+      return timestamp ? new Date(parseInt(timestamp)) : null;
+    } catch (error) {
+      console.error("❌ Error getting lastMarketsImageSent from Redis:", error);
+      return null;
+    }
+  }
+
+  private async setLastMarketsImageSent(date: Date): Promise<void> {
+    try {
+      await redis.set("lastMarketsImageSent", date.getTime().toString());
+    } catch (error) {
+      console.error("❌ Error setting lastMarketsImageSent in Redis:", error);
+    }
+  }
+
   private async setLastOfficialSent(date: Date): Promise<void> {
     try {
       await redis.set("lastOfficialSent", date.getTime().toString());
@@ -144,10 +162,15 @@ export class TelegramMarketsBot {
     // Fetch data immediately on start
     this.fetchAndSendToMarketsChannel();
 
-    // Then fetch every 3 minutes
+    // Then fetch every 3 minutes for text messages
     this.marketsIntervalId = setInterval(() => {
       this.fetchAndSendToMarketsChannel();
     }, 3 * 60 * 1000); // 3 minutes in milliseconds
+
+    // Also check every minute if it's time to send image
+    setInterval(() => {
+      this.checkAndSendImageToMarketsChannel();
+    }, 60 * 1000); // 1 minute in milliseconds
   }
 
   private startOfficialScheduler(): void {
@@ -171,6 +194,115 @@ export class TelegramMarketsBot {
         error
       );
     }
+  }
+
+  /**
+   * Checks if it's time to send image to markets channel
+   * Sends at 9AM, 13:30PM, and 21PM (9PM) Iran time
+   */
+  private async checkAndSendImageToMarketsChannel(): Promise<void> {
+    try {
+      if (!config.services.pdfRendererUrl) {
+        // No renderer service configured – silently skip
+        return;
+      }
+
+      // Get current time in Iran timezone
+      const now = new Date();
+      const iranTime = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+      );
+      const hour = iranTime.getHours();
+      const minute = iranTime.getMinutes();
+
+      // Check if it's one of the scheduled times: 9AM, 13:30PM, or 21PM
+      const isScheduledTime =
+        (hour === 9 && minute === 0) ||
+        (hour === 13 && minute === 30) ||
+        (hour === 21 && minute === 0);
+
+      if (!isScheduledTime) {
+        return;
+      }
+
+      // Get last sent time from Redis
+      const lastMarketsImageSent = await this.getLastMarketsImageSent();
+
+      // Check if we haven't sent at this specific time today
+      const shouldSend =
+        !lastMarketsImageSent ||
+        this.isDifferentTimeSlot(now, lastMarketsImageSent, hour, minute);
+
+      if (shouldSend) {
+        // Fetch fresh market data
+        const marketData = await marketsService.fetchMarketData();
+        if (!marketData) {
+          return;
+        }
+
+        // Generate HTML with live data
+        const html = this.generateDailyPriceHtml(marketData, now);
+
+        // Convert HTML to image buffer
+        const imageBuffer = await generateImageBuffer(html);
+
+        // Send image to markets channel
+        await this.bot.telegram.sendPhoto(
+          this.marketsChannelId,
+          { source: imageBuffer },
+          {
+            parse_mode: "HTML",
+          } as any
+        );
+
+        await this.setLastMarketsImageSent(now);
+        console.log(
+          `✅ Market price image sent to markets channel at ${hour}:${minute
+            .toString()
+            .padStart(2, "0")} Iran time`
+        );
+      }
+    } catch (error) {
+      console.error(
+        "❌ Error checking/sending image to markets channel:",
+        error
+      );
+    }
+  }
+
+  /**
+   * Helper to check if we've already sent at this time slot today
+   */
+  private isDifferentTimeSlot(
+    date1: Date,
+    date2: Date,
+    currentHour: number,
+    currentMinute: number
+  ): boolean {
+    const d1 = new Date(
+      date1.toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+    );
+    const d2 = new Date(
+      date2.toLocaleString("en-US", { timeZone: "Asia/Tehran" })
+    );
+
+    // Check if it's a different day
+    if (
+      d1.getFullYear() !== d2.getFullYear() ||
+      d1.getMonth() !== d2.getMonth() ||
+      d1.getDate() !== d2.getDate()
+    ) {
+      return true;
+    }
+
+    // Check if the last sent time was at a different time slot
+    const lastHour = d2.getHours();
+    const lastMinute = d2.getMinutes();
+
+    // If current time is 9:00, last should not be 9:00
+    // If current time is 13:30, last should not be 13:30
+    // If current time is 21:00, last should not be 21:00
+    return !(lastHour === currentHour && lastMinute === currentMinute);
   }
 
   /**
