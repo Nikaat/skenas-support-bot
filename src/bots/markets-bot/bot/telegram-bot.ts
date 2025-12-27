@@ -218,7 +218,7 @@ export class TelegramMarketsBot {
       // Check if it's one of the scheduled times: 9AM, 13:30PM, or 21PM
       const isScheduledTime =
         (hour === 9 && minute === 0) ||
-        (hour === 14 && minute === 0) ||
+        (hour === 13 && minute === 30) ||
         (hour === 21 && minute === 0);
 
       if (!isScheduledTime) {
