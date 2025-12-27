@@ -218,7 +218,7 @@ export class TelegramMarketsBot {
       // Check if it's one of the scheduled times: 9AM, 13:30PM, or 21PM
       const isScheduledTime =
         (hour === 9 && minute === 0) ||
-        (hour === 13 && minute === 30) ||
+        (hour === 14 && minute === 11) ||
         (hour === 21 && minute === 0);
 
       if (!isScheduledTime) {
@@ -246,11 +246,15 @@ export class TelegramMarketsBot {
         // Convert HTML to image buffer
         const imageBuffer = await generateImageBuffer(html);
 
-        // Send image to markets channel
+        // Generate text message for caption
+        const message = this.formatMarketDataMessage(marketData);
+
+        // Send image to markets channel with text message as caption
         await this.bot.telegram.sendPhoto(
           this.marketsChannelId,
           { source: imageBuffer },
           {
+            caption: message,
             parse_mode: "HTML",
           } as any
         );
@@ -775,11 +779,15 @@ export class TelegramMarketsBot {
           // Convert HTML to image buffer
           const imageBuffer = await generateImageBuffer(html);
 
-          // Send image to official channel instead of text message
+          // Generate text message for caption
+          const message = this.formatMarketDataMessage(marketData);
+
+          // Send image to official channel with text message as caption
           await this.bot.telegram.sendPhoto(
             this.officialChannelId,
             { source: imageBuffer },
             {
+              caption: message,
               parse_mode: "HTML",
             } as any
           );
