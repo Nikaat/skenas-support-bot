@@ -218,7 +218,7 @@ export class TelegramMarketsBot {
       // Check if it's one of the scheduled times: 9AM, 13:30PM, or 21PM
       const isScheduledTime =
         (hour === 9 && minute === 0) ||
-        (hour === 14 && minute === 11) ||
+        (hour === 13 && minute === 30) ||
         (hour === 21 && minute === 0);
 
       if (!isScheduledTime) {
@@ -754,8 +754,8 @@ export class TelegramMarketsBot {
       const hour = iranTime.getHours();
       const minute = iranTime.getMinutes();
 
-      // Check if it's the scheduled time (1:30 PM) in Iran time
-      const isScheduledTime = hour === 13 && minute === 30;
+      // Check if it's the scheduled time (2:22 PM) in Iran time
+      const isScheduledTime = hour === 14 && minute === 22;
 
       // Get last sent time from Redis
       const lastOfficialSent = await this.getLastOfficialSent();
