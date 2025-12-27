@@ -755,7 +755,7 @@ export class TelegramMarketsBot {
       const minute = iranTime.getMinutes();
 
       // Check if it's the scheduled time (2:22 PM) in Iran time
-      const isScheduledTime = hour === 14 && minute === 22;
+      const isScheduledTime = hour === 13 && minute === 30;
 
       // Get last sent time from Redis
       const lastOfficialSent = await this.getLastOfficialSent();
