@@ -249,22 +249,31 @@ export class TelegramMarketsBot {
         // Generate text message for caption
         const message = this.formatMarketDataMessage(marketData);
 
-        // Send image to markets channel with text message as caption
-        await this.bot.telegram.sendPhoto(
-          this.marketsChannelId,
-          { source: imageBuffer },
-          {
-            caption: message,
-            parse_mode: "HTML",
-          } as any
-        );
+        // Send image to markets channel with text message as caption (with retry)
+        try {
+          await this.retryTelegramCall(async () => {
+            await this.bot.telegram.sendPhoto(
+              this.marketsChannelId,
+              { source: imageBuffer },
+              {
+                caption: message,
+                parse_mode: "HTML",
+              } as any
+            );
+          });
 
-        await this.setLastMarketsImageSent(now);
-        console.log(
-          `✅ Market price image sent to markets channel at ${hour}:${minute
-            .toString()
-            .padStart(2, "0")} Iran time`
-        );
+          await this.setLastMarketsImageSent(now);
+          console.log(
+            `✅ Market price image sent to markets channel at ${hour}:${minute
+              .toString()
+              .padStart(2, "0")} Iran time`
+          );
+        } catch (error: any) {
+          console.error(
+            `❌ Failed to send image to markets channel after retries:`,
+            error.message || error.code || error
+          );
+        }
       }
     } catch (error) {
       console.error(
@@ -782,20 +791,29 @@ export class TelegramMarketsBot {
           // Generate text message for caption
           const message = this.formatMarketDataMessage(marketData);
 
-          // Send image to official channel with text message as caption
-          await this.bot.telegram.sendPhoto(
-            this.officialChannelId,
-            { source: imageBuffer },
-            {
-              caption: message,
-              parse_mode: "HTML",
-            } as any
-          );
+          // Send image to official channel with text message as caption (with retry)
+          try {
+            await this.retryTelegramCall(async () => {
+              await this.bot.telegram.sendPhoto(
+                this.officialChannelId,
+                { source: imageBuffer },
+                {
+                  caption: message,
+                  parse_mode: "HTML",
+                } as any
+              );
+            });
 
-          await this.setLastOfficialSent(now);
-          console.log(
-            `✅ Market price image sent to official channel at 13:30 Iran time`
-          );
+            await this.setLastOfficialSent(now);
+            console.log(
+              `✅ Market price image sent to official channel at 13:30 Iran time`
+            );
+          } catch (error: any) {
+            console.error(
+              `❌ Failed to send image to official channel after retries:`,
+              error.message || error.code || error
+            );
+          }
         }
       }
     } catch (error) {
@@ -967,20 +985,65 @@ export class TelegramMarketsBot {
     return `(${Math.abs(value).toFixed(1)}${sign}%${direction})`;
   }
 
+  /**
+   * Retry helper for Telegram API calls with exponential backoff
+   */
+  private async retryTelegramCall<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<T> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if it's a timeout or network error that we should retry
+        const isRetryableError =
+          error.code === "ETIMEDOUT" ||
+          error.code === "ECONNRESET" ||
+          error.code === "ENOTFOUND" ||
+          error.type === "system" ||
+          (error.response && error.response.status >= 500);
+
+        if (!isRetryableError || attempt === maxRetries - 1) {
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.warn(
+          `⚠️ Telegram API call failed (attempt ${
+            attempt + 1
+          }/${maxRetries}), retrying in ${delay}ms...`,
+          error.message || error.code
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
+  }
+
   private async sendMessageToChannel(
     channelId: string,
     message: string
   ): Promise<void> {
     try {
-      await this.bot.telegram.sendMessage(channelId, message, {
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      } as any);
+      await this.retryTelegramCall(async () => {
+        await this.bot.telegram.sendMessage(channelId, message, {
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        } as any);
+      });
       console.log(`✅ Market data sent to channel: ${channelId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(
-        `❌ Failed to send message to channel ${channelId}:`,
-        error
+        `❌ Failed to send message to channel ${channelId} after retries:`,
+        error.message || error.code || error
       );
     }
   }
